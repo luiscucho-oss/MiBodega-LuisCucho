@@ -76,14 +76,11 @@ fun ProductoCard(
                         .background(GrisClaro)
                 )
 
+                // El IconButton mide 48 dp (tamaño mínimo para el dedo); el círculo
+                // blanco va en el Icon para que se vea de solo 30 dp
                 IconButton(
                     onClick = onFavoritoClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(30.dp)
-                        // Círculo casi opaco para que el corazón se vea sobre cualquier foto
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape)
+                    modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
                         imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -94,7 +91,11 @@ fun ProductoCard(
                             "Agregar ${producto.nombre} a favoritos"
                         },
                         tint = if (esFavorito) RojoPrecio else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier
+                            .size(30.dp)
+                            // Círculo casi opaco para que el corazón se vea sobre cualquier foto
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape)
+                            .padding(6.dp)
                     )
                 }
             }
