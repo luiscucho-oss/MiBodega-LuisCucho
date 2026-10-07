@@ -34,6 +34,17 @@ private object Rutas {
     const val DETALLE = "detalle/{productoId}"
     const val CARRITO = "carrito"
 
+    // Pantalla del formulario de entrega (nombre, teléfono, dirección y referencia)
+    // y del resumen del pedido. Se llega aquí desde el carrito con "Continuar pedido".
+    // No lleva argumentos en la ruta: el resumen se calcula en ClienteApp a partir
+    // del carrito, que ya vive aquí arriba.
+    const val ENTREGA = "entrega"
+
+    // Pantalla final de "¡Pedido confirmado!". Se llega aquí desde ENTREGA al tocar
+    // "Confirmar pedido". Más adelante usaremos popUpTo para que, al presionar
+    // "atrás" en esta pantalla, el usuario no regrese al carrito ni al formulario.
+    const val CONFIRMACION = "confirmacion"
+
     fun detalle(productoId: Int) = "detalle/$productoId"
 }
 
