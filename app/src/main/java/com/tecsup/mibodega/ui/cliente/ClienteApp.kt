@@ -14,8 +14,10 @@ import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.cliente.screens.bienvenida.BienvenidaScreen
+import com.tecsup.mibodega.ui.cliente.screens.carrito.COSTO_DELIVERY
 import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
 import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
+import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
 import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
 
@@ -130,7 +132,24 @@ fun ClienteApp() {
                 onEliminar = { producto ->
                     carrito = carrito.filterNot { it.producto.id == producto.id }
                 },
-                onContinuarPedido = { /* TODO: navegar a DatosEntregaScreen */ }
+                onContinuarPedido = { navController.navigate(Rutas.ENTREGA) }
+            )
+        }
+
+        composable(Rutas.ENTREGA) {
+            // Los montos se calculan aquí a partir del carrito, con la misma fórmula
+            // que CarritoScreen. DatosEntregaScreen solo los recibe y los muestra.
+            val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
+            val total = subtotal + COSTO_DELIVERY
+
+            DatosEntregaScreen(
+                subtotal = subtotal,
+                delivery = COSTO_DELIVERY,
+                total = total,
+                onVolver = { navController.popBackStack() },
+                onConfirmarPedido = { nombre, telefono, direccion, referencia ->
+                    // TODO: vaciar el carrito y navegar a la pantalla de confirmación
+                }
             )
         }
     }

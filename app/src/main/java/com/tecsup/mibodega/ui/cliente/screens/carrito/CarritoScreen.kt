@@ -41,7 +41,9 @@ import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
-private const val COSTO_DELIVERY = 4.00
+// Público (sin "private") para que ClienteApp use el mismo valor al armar
+// el resumen de DatosEntregaScreen: así el costo se cambia en un solo lugar.
+const val COSTO_DELIVERY = 4.00
 
 /**
  * Pantalla 5: Mi carrito (mockup "Cliente").
