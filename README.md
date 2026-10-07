@@ -99,6 +99,8 @@ app/src/main/java/com/tecsup/mibodega/
 
 ### Fase 1 — rama `main`
 
+Las tarjetas, el detalle y el carrito muestran la foto real de cada producto.
+
 | Bienvenida | Iniciar sesión | Registro |
 |:---:|:---:|:---:|
 | <img src="capturas/main/01-bienvenida.png" width="220"> | <img src="capturas/main/02-login.png" width="220"> | <img src="capturas/main/03-registro.png" width="220"> |
@@ -158,7 +160,8 @@ El `NavigationDrawer` es un menú lateral que se abre con un botón o deslizando
 ## Observaciones
 
 1. El carrito, el usuario y los pedidos viven en memoria (en `ClienteApp`): al cerrar la app se pierden, y quien entra por "Iniciar sesión" sin haberse registrado ve datos de ejemplo. Para una app real haría falta guardarlos con Room o DataStore, o en un servidor.
-2. El proyecto usa Gradle 8.13, que no funciona con el JDK 25 que trae Android Studio. Para poder sincronizar y compilar hubo que configurar JDK 21 como Gradle JDK.
+2. El proyecto usaba Gradle 8.13, que no funciona con el JDK 25 que trae Android Studio. Se actualizó el Gradle Wrapper a 9.4.1, que sí lo soporta, así que el proyecto sincroniza y compila al clonarlo sin cambiar el Gradle JDK.
+3. Las fotos de los productos están en `res/drawable` (`producto_*.jpg`) y se obtuvieron de [Open Food Facts](https://world.openfoodfacts.org), una base de datos abierta de productos. Cada `Producto` guarda su foto en el campo `imagen`, y al estar dentro de la app se ven sin conexión a internet.
 
 ## Conclusiones
 
