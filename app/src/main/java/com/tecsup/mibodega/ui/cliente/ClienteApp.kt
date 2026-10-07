@@ -2,6 +2,7 @@ package com.tecsup.mibodega.ui.cliente
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -12,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
+import com.tecsup.mibodega.ui.cliente.modelo.Pedido
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.cliente.modelo.Usuario
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
@@ -25,6 +27,7 @@ import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
 import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
 import com.tecsup.mibodega.ui.cliente.screens.login.LoginScreen
+import com.tecsup.mibodega.ui.cliente.screens.pedidos.PedidosScreen
 import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
 import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
 
@@ -47,6 +50,10 @@ fun ClienteApp() {
     // Datos del usuario que entró a la app. Se llenan en Registro o en Login.
     // null = todavía nadie ha entrado (se está en Bienvenida).
     var usuario by remember { mutableStateOf<Usuario?>(null) }
+
+    // Pedidos confirmados. mutableStateListOf es una lista "observable":
+    // al hacer add(), Compose redibuja solo las pantallas que la leen (Pedidos).
+    val pedidos = remember { mutableStateListOf<Pedido>() }
 
     NavHost(
         navController = navController,
@@ -134,6 +141,13 @@ fun ClienteApp() {
             )
         }
 
+        composable(Rutas.PEDIDOS) {
+            PedidosScreen(
+                pedidos = pedidos,
+                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+            )
+        }
+
         composable(
             route = Rutas.DETALLE,
             arguments = listOf(navArgument("productoId") { type = NavType.IntType })
@@ -188,7 +202,17 @@ fun ClienteApp() {
                 total = total,
                 onVolver = { navController.popBackStack() },
                 onConfirmarPedido = { nombre, telefono, direccion, referencia ->
-                    // TODO: enviar el pedido con estos datos cuando exista un backend
+                    // Por ahora los pedidos viven en memoria, en la lista "pedidos"
+                    // de ClienteApp: no hay un servidor a donde enviarlos, así que
+                    // se pierden al cerrar la app. El número es correlativo.
+                    pedidos.add(
+                        Pedido(
+                            numero = pedidos.size + 1,
+                            productos = carrito,
+                            total = total,
+                            direccion = direccion
+                        )
+                    )
 
                     // Pila antes:   Inicio → Carrito → Entrega
                     // Pila después: Inicio → Confirmación
