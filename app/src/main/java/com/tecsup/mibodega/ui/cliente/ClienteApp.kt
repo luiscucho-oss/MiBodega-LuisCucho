@@ -115,6 +115,8 @@ fun ClienteApp() {
 
         composable(Rutas.INICIO) {
             InicioScreen(
+                // Para el saludo "Hola, <nombre>"
+                nombreUsuario = (usuario ?: usuarioDeEjemplo).nombre,
                 cantidadCarrito = carrito.sumOf { it.cantidad },
                 onVerCarrito = { navController.navigate(Rutas.CARRITO) },
                 onProductoClick = { producto ->

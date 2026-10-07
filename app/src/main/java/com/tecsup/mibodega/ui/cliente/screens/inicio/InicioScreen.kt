@@ -1,6 +1,7 @@
 package com.tecsup.mibodega.ui.cliente.screens.inicio
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,14 +13,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -34,6 +38,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,17 +58,23 @@ import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.componentes.BarraNavegacion
 import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
 import com.tecsup.mibodega.ui.componentes.ProductoCard
+import com.tecsup.mibodega.ui.theme.AzulTexto
+import com.tecsup.mibodega.ui.theme.Blanco
 import com.tecsup.mibodega.ui.theme.BodegaTheme
+import com.tecsup.mibodega.ui.theme.GrisBorde
 import com.tecsup.mibodega.ui.theme.GrisClaro
+import com.tecsup.mibodega.ui.theme.GrisTexto
 import com.tecsup.mibodega.ui.theme.VerdeBodega
+import com.tecsup.mibodega.ui.theme.VerdeOscuro
 import java.text.Normalizer
 
 /**
  * Pantalla 3: Inicio / Productos (mockup "Cliente").
- * La más completa: Scaffold (topBar + bottomBar), LazyRow de categorías
- * y LazyVerticalGrid de productos.
+ * La más completa: Scaffold (topBar con saludo + bottomBar), buscador fijo y
+ * una LazyVerticalGrid que contiene el banner, los chips de categoría y los productos.
  *
  * @param productos lista completa (fake por ahora, luego vendrá de un ViewModel)
+ * @param nombreUsuario para el saludo "Hola, <nombre>" de la barra superior
  * @param cantidadCarrito para el badge del carrito en la topBar
  * @param onNavegar avisa qué pestaña de la barra inferior se tocó
  */
@@ -69,6 +82,7 @@ import java.text.Normalizer
 @Composable
 fun InicioScreen(
     productos: List<Producto> = listaProductosFake,
+    nombreUsuario: String,
     cantidadCarrito: Int,
     onVerCarrito: () -> Unit,
     onProductoClick: (Producto) -> Unit,
@@ -98,9 +112,12 @@ fun InicioScreen(
     }
 
     Scaffold(
+        // Fondo gris muy claro: así las tarjetas blancas con sombra resaltan
+        containerColor = GrisClaro,
         topBar = {
             TopAppBar(
-                title = { Text("Mi Bodega", fontWeight = FontWeight.Bold) },
+                // En lugar de "Mi Bodega", un saludo personal con el nombre del usuario
+                title = { SaludoUsuario(nombreUsuario = nombreUsuario) },
                 actions = {
                     IconButton(onClick = onVerCarrito) {
                         BadgedBox(
@@ -110,10 +127,16 @@ fun InicioScreen(
                                 }
                             }
                         ) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
+                            Icon(
+                                Icons.Default.ShoppingCart,
+                                contentDescription = "Carrito",
+                                tint = AzulTexto
+                            )
                         }
                     }
-                }
+                },
+                // La barra superior usa el mismo fondo que la pantalla (sin "corte")
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GrisClaro)
             )
         },
         // Barra inferior compartida: aquí la pestaña activa es INICIO y, al
@@ -129,60 +152,80 @@ fun InicioScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingInterno)
-                .padding(horizontal = 16.dp)
         ) {
+            // El buscador queda FIJO arriba (fuera de la grilla), así no se
+            // pierde de vista al bajar por la lista de productos
             OutlinedTextField(
                 value = textoBusqueda,
                 onValueChange = { textoBusqueda = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                placeholder = { Text("Buscar productos...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 4.dp),
+                placeholder = { Text("Buscar productos...", color = GrisTexto) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrisTexto) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = GrisClaro,
-                    focusedContainerColor = GrisClaro,
-                    unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                    unfocusedContainerColor = Blanco,
+                    focusedContainerColor = Blanco,
+                    unfocusedBorderColor = GrisBorde,
                     focusedBorderColor = VerdeBodega
                 )
             )
 
-            Text(
-                text = "Productos destacados",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
+            // Todo lo demás va DENTRO de la grilla para que banner, chips y
+            // productos se desplacen juntos con un solo scroll
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                // El margen va en contentPadding (y no en padding) para que la
+                // sombra de las tarjetas de los bordes no se corte
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(listaCategorias) { categoria ->
-                    ChipCategoria(
-                        texto = categoria,
-                        seleccionado = categoria == categoriaSeleccionada,
-                        onClick = { categoriaSeleccionada = categoria }
+                // GridItemSpan(maxLineSpan) = este elemento ocupa las 2 columnas
+
+                // El banner se oculta mientras el usuario busca, para que los
+                // resultados aparezcan arriba sin tener que bajar
+                if (textoBusqueda.isBlank()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        BannerPromocion()
+                    }
+                }
+
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "Productos destacados",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AzulTexto
                     )
                 }
-            }
 
-            // Si ningún producto pasa los filtros (búsqueda + categoría), se muestra
-            // un mensaje en lugar de dejar la pantalla en blanco. Como
-            // productosFiltrados se recalcula al escribir o al cambiar de categoría,
-            // el mensaje aparece y desaparece solo.
-            if (productosFiltrados.isEmpty()) {
-                MensajeSinResultados()
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(productosFiltrados) { producto ->
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(listaCategorias) { categoria ->
+                            ChipCategoria(
+                                texto = categoria,
+                                seleccionado = categoria == categoriaSeleccionada,
+                                onClick = { categoriaSeleccionada = categoria }
+                            )
+                        }
+                    }
+                }
+
+                // Si ningún producto pasa los filtros (búsqueda + categoría), se muestra
+                // un mensaje en lugar de dejar la pantalla en blanco. Como
+                // productosFiltrados se recalcula al escribir o al cambiar de categoría,
+                // el mensaje aparece y desaparece solo.
+                if (productosFiltrados.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        MensajeSinResultados()
+                    }
+                } else {
+                    // key = id: Compose reconoce cada tarjeta aunque cambie el filtro
+                    items(productosFiltrados, key = { it.id }) { producto ->
                         ProductoCard(
                             producto = producto,
                             onClick = { onProductoClick(producto) },
@@ -228,7 +271,7 @@ private fun MensajeSinResultados() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 48.dp),
+            .padding(top = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -241,6 +284,7 @@ private fun MensajeSinResultados() {
         Text(
             text = "No se encontraron productos",
             style = MaterialTheme.typography.titleMedium,
+            color = AzulTexto,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(4.dp))
@@ -253,22 +297,112 @@ private fun MensajeSinResultados() {
     }
 }
 
+/**
+ * Saludo de la barra superior. Usa solo el primer nombre ("Luis Cucho" → "Luis")
+ * para que sea corto y cercano.
+ */
+@Composable
+private fun SaludoUsuario(nombreUsuario: String) {
+    val primerNombre = nombreUsuario.trim().substringBefore(" ")
+    Column {
+        Text(
+            text = "Hola, $primerNombre",
+            style = MaterialTheme.typography.titleLarge,
+            color = AzulTexto
+        )
+        Text(
+            text = "¿Qué vas a pedir hoy?",
+            style = MaterialTheme.typography.bodySmall,
+            color = GrisTexto
+        )
+    }
+}
+
+/**
+ * Banner de promoción: fondo verde (degradado de VerdeBodega a VerdeOscuro)
+ * con esquinas redondeadas, un mensaje y un ícono grande de delivery.
+ */
+@Composable
+private fun BannerPromocion() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            // clip recorta el fondo con las esquinas redondeadas
+            .clip(RoundedCornerShape(20.dp))
+            .background(Brush.horizontalGradient(listOf(VerdeBodega, VerdeOscuro)))
+            .padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // weight(1f): el texto ocupa todo el ancho que deja libre el ícono
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "¡Tu bodega a un toque!",
+                style = MaterialTheme.typography.titleMedium,
+                color = Blanco
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pide tus productos de siempre y te los llevamos a tu puerta.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Blanco
+            )
+            Spacer(Modifier.height(10.dp))
+            // "Píldora" blanca con el costo del delivery
+            Text(
+                text = "Delivery S/ 4.00",
+                style = MaterialTheme.typography.labelMedium,
+                color = VerdeOscuro,
+                modifier = Modifier
+                    .background(Blanco, RoundedCornerShape(50))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Icon(
+            imageVector = Icons.Default.LocalShipping,
+            contentDescription = null, // decorativo
+            tint = Blanco,
+            modifier = Modifier.size(64.dp)
+        )
+    }
+}
+
+/**
+ * Chip de categoría más claro:
+ * - Seleccionado: fondo verde, texto blanco y un check, para que se note cuál está activo.
+ * - No seleccionado: fondo blanco con borde gris y texto oscuro (buen contraste).
+ */
 @Composable
 private fun ChipCategoria(
     texto: String,
     seleccionado: Boolean,
     onClick: () -> Unit
 ) {
-    val fondo = if (seleccionado) VerdeBodega else GrisClaro
-    val contenido = if (seleccionado) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val fondo = if (seleccionado) VerdeBodega else Blanco
+    val colorTexto = if (seleccionado) Blanco else AzulTexto
+    val colorBorde = if (seleccionado) VerdeBodega else GrisBorde
+    // RoundedCornerShape(50) = 50 % del alto: bordes totalmente redondos
+    val forma = RoundedCornerShape(50)
 
     Row(
         modifier = Modifier
-            .background(fondo, RoundedCornerShape(20.dp))
+            .clip(forma)
+            .background(fondo)
+            .border(1.dp, colorBorde, forma)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = texto, color = contenido, fontWeight = FontWeight.Medium)
+        if (seleccionado) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Blanco,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+        }
+        Text(text = texto, color = colorTexto, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -277,6 +411,7 @@ private fun ChipCategoria(
 private fun InicioPreview() {
     BodegaTheme {
         InicioScreen(
+            nombreUsuario = "Luis Cucho",
             cantidadCarrito = 3,
             onVerCarrito = {},
             onProductoClick = {},
