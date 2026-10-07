@@ -11,15 +11,17 @@ import com.tecsup.mibodega.R
 val listaCategorias = listOf("Todos", "Bebidas", "Abarrotes", "Snacks")
 
 /**
- * Usuario de ejemplo: se usa cuando alguien entra por Login sin haberse
- * registrado antes en esta sesión (todavía no hay una base de datos de
- * usuarios de donde leer sus datos reales).
+ * Cuenta fija del código: con el teléfono 987654321 y la contraseña 123456
+ * siempre se puede iniciar sesión, aunque nadie se haya registrado (todavía
+ * no hay una base de datos de usuarios). Las cuentas creadas en Registro
+ * se guardan junto a esta en ClienteApp.
  */
 val usuarioDeEjemplo = Usuario(
     nombre = "Juan Pérez",
     telefono = "987654321",
     direccion = "Av. Los Olivos 123",
-    referencia = "Frente al parque"
+    referencia = "Frente al parque",
+    contrasena = "123456"
 )
 
 val listaProductosFake = listOf(

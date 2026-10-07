@@ -48,9 +48,18 @@ fun ClienteApp() {
     // El carrito vive aquí arriba, no en ninguna Screen.
     var carrito by remember { mutableStateOf<List<ItemCarrito>>(emptyList()) }
 
-    // Datos del usuario que entró a la app. Se llenan en Registro o en Login.
-    // null = todavía nadie ha entrado (se está en Bienvenida).
+    // Cuentas con las que se puede iniciar sesión. Empieza con la cuenta fija del
+    // código (usuarioDeEjemplo: 987654321 / 123456) y cada Registro agrega una.
+    // Viven en memoria, así que las cuentas creadas se pierden al cerrar la app.
+    val cuentas = remember { mutableStateListOf(usuarioDeEjemplo) }
+
+    // Usuario que inició sesión. Se llena solo en Login.
+    // null = todavía nadie ha entrado (se está en Bienvenida, Registro o Login).
     var usuario by remember { mutableStateOf<Usuario?>(null) }
+
+    // Teléfono de la cuenta recién creada en Registro. Login lo usa para llenar
+    // el campo y mostrar "¡Cuenta creada!". null = se llegó a Login desde Bienvenida.
+    var telefonoRecienRegistrado by remember { mutableStateOf<String?>(null) }
 
     // Pedidos confirmados. mutableStateListOf es una lista "observable":
     // al hacer add(), Compose redibuja solo las pantallas que la leen (Pedidos).
@@ -63,7 +72,10 @@ fun ClienteApp() {
         composable(Rutas.BIENVENIDA) {
             BienvenidaScreen(
                 onRegistrarse = { navController.navigate(Rutas.REGISTRO) },
-                onIniciarSesion = { navController.navigate(Rutas.LOGIN) }
+                onIniciarSesion = {
+                    telefonoRecienRegistrado = null
+                    navController.navigate(Rutas.LOGIN)
+                }
                 // Términos y condiciones: el diálogo lo abre y lo cierra la misma
                 // BienvenidaScreen, porque es estado visual que solo ella usa.
             )
@@ -71,23 +83,30 @@ fun ClienteApp() {
 
         composable(Rutas.LOGIN) {
             LoginScreen(
+                telefonoRegistrado = telefonoRecienRegistrado,
                 onVolver = { navController.popBackStack() },
-                onIngresar = { telefono ->
-                    // Si ya se registró en esta sesión con ese mismo teléfono, se
-                    // conservan sus datos. Si no, se usan los datos de ejemplo
-                    // (con el teléfono que escribió), porque todavía no hay una
-                    // base de datos de donde leer sus datos reales.
-                    usuario = usuario?.takeIf { it.telefono == telefono }
-                        ?: usuarioDeEjemplo.copy(telefono = telefono)
+                onIngresar = { telefono, contrasena ->
+                    // Se busca una cuenta con ese teléfono Y esa contraseña: la cuenta
+                    // fija del código o alguna creada en Registro
+                    val cuenta = cuentas.find { it.telefono == telefono && it.contrasena == contrasena }
 
-                    // Pila antes:   Bienvenida → Login
-                    // Pila después: Inicio
-                    // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
-                    // ya con la sesión iniciada, "atrás" en Inicio cierra la app en vez
-                    // de volver a la pantalla de ingreso.
-                    navController.navigate(Rutas.INICIO) {
-                        popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+                    if (cuenta != null) {
+                        usuario = cuenta
+                        telefonoRecienRegistrado = null
+
+                        // Pila antes:   Bienvenida → Login
+                        // Pila después: Inicio
+                        // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
+                        // ya con la sesión iniciada, "atrás" en Inicio cierra la app en vez
+                        // de volver a la pantalla de ingreso.
+                        navController.navigate(Rutas.INICIO) {
+                            popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+                        }
                     }
+
+                    // Se le responde a LoginScreen si los datos eran correctos:
+                    // con false muestra el error y se queda donde está
+                    cuenta != null
                 },
                 // Si no tiene cuenta, va al formulario de registro
                 onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
@@ -97,18 +116,30 @@ fun ClienteApp() {
         composable(Rutas.REGISTRO) {
             RegistroScreen(
                 onVolver = { navController.popBackStack() },
-                onCrearCuenta = { nombre, telefono, direccion, referencia ->
-                    // Se guardan los datos del registro aquí arriba para que otras
-                    // pantallas (como Perfil) puedan mostrarlos
-                    usuario = Usuario(
-                        nombre = nombre,
-                        telefono = telefono,
-                        direccion = direccion,
-                        referencia = referencia
-                    )
-                    navController.navigate(Rutas.INICIO) {
-                        popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+                onCrearCuenta = { nuevoUsuario ->
+                    // El teléfono es con lo que se inicia sesión: no puede haber dos
+                    // cuentas con el mismo
+                    val telefonoLibre = cuentas.none { it.telefono == nuevoUsuario.telefono }
+
+                    if (telefonoLibre) {
+                        // Se guarda la cuenta aquí arriba para que Login pueda validarla
+                        // y, después, Perfil muestre sus datos
+                        cuentas.add(nuevoUsuario)
+                        telefonoRecienRegistrado = nuevoUsuario.telefono
+
+                        // Registrarse NO inicia sesión: se va a Login para entrar con
+                        // el teléfono y la contraseña que se acaban de crear.
+                        // Pila antes:   Bienvenida → Registro  (o Bienvenida → Login → Registro)
+                        // Pila después: Bienvenida → Login
+                        // popUpTo(BIENVENIDA) saca todo lo que está encima de Bienvenida:
+                        // "atrás" en Login vuelve a Bienvenida y no al formulario ya enviado.
+                        navController.navigate(Rutas.LOGIN) {
+                            popUpTo(Rutas.BIENVENIDA)
+                        }
                     }
+
+                    // Con false, RegistroScreen marca el teléfono en rojo
+                    telefonoLibre
                 }
             )
         }
@@ -151,12 +182,14 @@ fun ClienteApp() {
 
         composable(Rutas.PERFIL) {
             PerfilScreen(
-                // Siempre hay usuario aquí (se entra por Login o Registro); el
-                // ejemplo es solo un respaldo para que nunca llegue null
+                // Siempre hay usuario aquí (solo se entra por Login); el ejemplo
+                // es solo un respaldo para que nunca llegue null
                 usuario = usuario ?: usuarioDeEjemplo,
                 onCerrarSesion = {
-                    // Al salir, el carrito de esta sesión ya no sirve
+                    // Al salir, el carrito de esta sesión ya no sirve y ya no hay
+                    // nadie con la sesión iniciada (las cuentas sí se conservan)
                     carrito = emptyList()
+                    usuario = null
 
                     // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
                     // (Inicio, Perfil...) y deja solo Bienvenida. Así, "atrás" en

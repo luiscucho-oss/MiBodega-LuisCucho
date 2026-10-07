@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tecsup.mibodega.ui.cliente.modelo.Usuario
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
@@ -41,22 +42,32 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
 /**
  * Pantalla 2: Registro de datos (mockup "Cliente").
  * Guarda su propio estado de formulario (remember) porque solo esta
- * pantalla lo necesita. Al enviar, entrega los datos ya listos.
+ * pantalla lo necesita. Al enviar, entrega el Usuario ya armado.
+ * Crear la cuenta NO inicia sesión: ClienteApp lleva a Iniciar sesión
+ * para entrar con el teléfono y la contraseña que se acaban de elegir.
+ *
+ * @param onCrearCuenta recibe el usuario nuevo y devuelve false si ya existe
+ *        una cuenta con ese teléfono (entonces el teléfono se marca en rojo).
  */
 @Composable
 fun RegistroScreen(
     onVolver: () -> Unit,
-    onCrearCuenta: (nombre: String, telefono: String, direccion: String, referencia: String) -> Unit
+    onCrearCuenta: (Usuario) -> Boolean
 ) {
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
 
     // Como estos datos se guardan en ClienteApp y se muestran en Perfil,
     // no se puede crear la cuenta con algún campo vacío
     // (isNotBlank: un campo con solo espacios cuenta como vacío)
-    val camposCompletos = listOf(nombre, telefono, direccion, referencia).all { it.isNotBlank() }
+    val camposCompletos = listOf(nombre, telefono, contrasena, direccion, referencia).all { it.isNotBlank() }
+
+    // true si ClienteApp avisó que ese teléfono ya tiene cuenta.
+    // Vuelve a false apenas el usuario cambia el teléfono.
+    var telefonoRepetido by remember { mutableStateOf(false) }
 
     // Pasa a true la primera vez que se toca "Crear cuenta". Desde ahí, cada campo
     // vacío se marca en rojo; al escribir en él, el rojo se quita solo porque
@@ -103,10 +114,25 @@ fun RegistroScreen(
         CampoTexto(
             etiqueta = "Teléfono",
             valor = telefono,
-            onValorCambia = { telefono = it },
-            esError = intentoCrear && telefono.isBlank(),
+            onValorCambia = {
+                telefono = it
+                telefonoRepetido = false
+            },
+            esError = (intentoCrear && telefono.isBlank()) || telefonoRepetido,
+            mensajeError = if (telefonoRepetido) "Ya existe una cuenta con este teléfono" else "Este campo es obligatorio",
             placeholder = "987 654 321",
             teclado = KeyboardType.Phone
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // Con este teléfono y esta contraseña se entra después en Iniciar sesión
+        CampoTexto(
+            etiqueta = "Contraseña",
+            valor = contrasena,
+            onValorCambia = { contrasena = it },
+            esError = intentoCrear && contrasena.isBlank(),
+            placeholder = "••••••",
+            esContrasena = true
         )
         Spacer(Modifier.height(16.dp))
 
@@ -133,8 +159,18 @@ fun RegistroScreen(
             texto = "Crear cuenta",
             onClick = {
                 if (camposCompletos) {
-                    // trim(): se envían los datos sin espacios sobrantes al inicio o al final
-                    onCrearCuenta(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim())
+                    val nuevoUsuario = Usuario(
+                        // trim(): sin espacios sobrantes al inicio o al final
+                        nombre = nombre.trim(),
+                        // Sin ningún espacio, igual que en Login: "987 654 321" = "987654321"
+                        telefono = telefono.replace(" ", ""),
+                        direccion = direccion.trim(),
+                        referencia = referencia.trim(),
+                        // La contraseña va tal cual: un espacio también es parte de ella
+                        contrasena = contrasena
+                    )
+                    // onCrearCuenta devuelve false si ese teléfono ya tiene cuenta
+                    telefonoRepetido = !onCrearCuenta(nuevoUsuario)
                 } else {
                     // No se avanza: solo se marcan en rojo los campos vacíos
                     intentoCrear = true
@@ -181,7 +217,7 @@ private fun EncabezadoRegistro(onVolver: () -> Unit) {
 @Composable
 private fun RegistroPreview() {
     BodegaTheme {
-        RegistroScreen(onVolver = {}, onCrearCuenta = { _, _, _, _ -> })
+        RegistroScreen(onVolver = {}, onCrearCuenta = { true })
     }
 }
 

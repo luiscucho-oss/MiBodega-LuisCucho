@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,28 +45,39 @@ import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
- * Pantalla de Iniciar sesión. Se abre desde Bienvenida con "Iniciar sesión".
+ * Pantalla de Iniciar sesión. Se abre desde Bienvenida con "Iniciar sesión"
+ * y también después de crear una cuenta en Registro.
  * Guarda su propio estado de formulario (remember), igual que RegistroScreen,
  * porque solo esta pantalla necesita los textos mientras el usuario escribe.
  * No navega sola: avisa hacia arriba con onIngresar / onIrARegistro / onVolver
  * y ClienteApp decide a dónde ir (state hoisting).
  *
- * @param onIngresar recibe el teléfono escrito. La contraseña no se envía hacia
- *        arriba porque todavía no hay un servidor que la valide: por ahora solo
- *        se exige que el campo no esté vacío.
+ * @param telefonoRegistrado teléfono de la cuenta que se acaba de crear en
+ *        Registro: llena el campo y muestra el aviso "¡Cuenta creada!".
+ *        Es null si se llegó desde Bienvenida.
+ * @param onIngresar recibe el teléfono (sin espacios) y la contraseña, y devuelve
+ *        true si coinciden con alguna cuenta. Si devuelve false, la pantalla
+ *        muestra "Teléfono o contraseña incorrectos" y no avanza.
  */
 @Composable
 fun LoginScreen(
+    telefonoRegistrado: String?,
     onVolver: () -> Unit,
-    onIngresar: (telefono: String) -> Unit,
+    onIngresar: (telefono: String, contrasena: String) -> Boolean,
     onIrARegistro: () -> Unit
 ) {
-    var telefono by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf(telefonoRegistrado ?: "") }
     var contrasena by remember { mutableStateOf("") }
 
-    // "Ingresar" solo se activa con ambos campos llenos. isNotBlank() hace
-    // que un campo con solo espacios cuente como vacío.
+    // isNotBlank() hace que un campo con solo espacios cuente como vacío
     val camposCompletos = telefono.isNotBlank() && contrasena.isNotBlank()
+
+    // Pasa a true al tocar "Ingresar": desde ahí los campos vacíos se ven en rojo
+    var intentoIngresar by remember { mutableStateOf(false) }
+
+    // true si el teléfono y la contraseña no coinciden con ninguna cuenta.
+    // Vuelve a false apenas el usuario corrige alguno de los dos campos.
+    var datosIncorrectos by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -94,30 +108,54 @@ fun LoginScreen(
 
         Spacer(Modifier.height(28.dp))
 
+        // Solo aparece cuando se llega aquí justo después de registrarse
+        if (telefonoRegistrado != null) {
+            AvisoCuentaCreada()
+            Spacer(Modifier.height(20.dp))
+        }
+
         CampoTexto(
             etiqueta = "Teléfono",
             valor = telefono,
-            onValorCambia = { telefono = it },
+            onValorCambia = {
+                telefono = it
+                datosIncorrectos = false
+            },
             placeholder = "987 654 321",
-            teclado = KeyboardType.Phone
+            teclado = KeyboardType.Phone,
+            esError = (intentoIngresar && telefono.isBlank()) || datosIncorrectos,
+            // Con datos incorrectos solo se pinta de rojo: el mensaje sale una sola
+            // vez, debajo de la contraseña
+            mensajeError = if (datosIncorrectos) null else "Ingresa tu teléfono"
         )
         Spacer(Modifier.height(16.dp))
 
         CampoTexto(
             etiqueta = "Contraseña",
             valor = contrasena,
-            onValorCambia = { contrasena = it },
+            onValorCambia = {
+                contrasena = it
+                datosIncorrectos = false
+            },
             placeholder = "••••••",
             // Oculta lo que se escribe (muestra puntos)
-            esContrasena = true
+            esContrasena = true,
+            esError = (intentoIngresar && contrasena.isBlank()) || datosIncorrectos,
+            mensajeError = if (datosIncorrectos) "Teléfono o contraseña incorrectos" else "Ingresa tu contraseña"
         )
 
         Spacer(Modifier.height(28.dp))
 
         BotonPrimario(
             texto = "Ingresar",
-            onClick = { onIngresar(telefono.trim()) },
-            habilitado = camposCompletos
+            onClick = {
+                intentoIngresar = true
+                if (camposCompletos) {
+                    // ClienteApp busca una cuenta con ese teléfono y esa contraseña.
+                    // replace(" ", ""): "987 654 321" y "987654321" son el mismo teléfono
+                    datosIncorrectos = !onIngresar(telefono.replace(" ", ""), contrasena)
+                }
+            }
         )
 
         Spacer(Modifier.height(20.dp))
@@ -155,6 +193,29 @@ private fun EncabezadoLogin(onVolver: () -> Unit) {
     )
 }
 
+/** Recuadro verde que confirma que la cuenta se creó y pide iniciar sesión. */
+@Composable
+private fun AvisoCuentaCreada() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(VerdeBodega.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = null, // el texto de al lado ya lo explica
+            tint = VerdeBodega
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = "¡Cuenta creada! Ahora ingresa con tu teléfono y tu contraseña.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
 /**
  * "¿No tienes cuenta? Regístrate": toda la fila es tocable (área más grande
  * para el dedo) y la palabra "Regístrate" va en verde para que parezca enlace.
@@ -186,6 +247,11 @@ private fun EnlaceRegistro(onIrARegistro: () -> Unit) {
 @Composable
 private fun LoginPreview() {
     BodegaTheme {
-        LoginScreen(onVolver = {}, onIngresar = {}, onIrARegistro = {})
+        LoginScreen(
+            telefonoRegistrado = null,
+            onVolver = {},
+            onIngresar = { _, _ -> false },
+            onIrARegistro = {}
+        )
     }
 }
