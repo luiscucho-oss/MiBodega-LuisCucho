@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material.icons.filled.ShoppingBasket
@@ -31,8 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
@@ -42,6 +44,7 @@ import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.BotonSecundario
 import com.tecsup.mibodega.ui.componentes.SelectorCantidad
 import com.tecsup.mibodega.ui.theme.AzulTexto
+import com.tecsup.mibodega.ui.theme.Blanco
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.GrisTexto
@@ -56,6 +59,9 @@ const val COSTO_DELIVERY = 4.00
  * No guarda estado propio: el carrito viene de ClienteApp y cualquier
  * cambio (sumar, restar, eliminar) se avisa hacia arriba con callbacks.
  * Si el carrito está vacío, muestra un estado vacío y desactiva "Continuar pedido".
+ *
+ * Diseño: fondo gris claro, cada producto en una tarjeta blanca redondeada
+ * y el resumen en un panel blanco inferior con las esquinas de arriba redondeadas.
  *
  * @param onIrAInicio botón "Volver al inicio" del estado vacío
  */
@@ -75,9 +81,15 @@ fun CarritoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // El fondo va ANTES de safeDrawingPadding para que también pinte
+            // detrás de la barra de estado
+            .background(GrisClaro)
             .safeDrawingPadding()
     ) {
-        EncabezadoCarrito(onVolver = onVolver)
+        EncabezadoCarrito(
+            onVolver = onVolver,
+            cantidadProductos = carrito.sumOf { it.cantidad }
+        )
 
         if (carrito.isEmpty()) {
             // weight(1f): el estado vacío ocupa todo el espacio libre del medio
@@ -87,19 +99,19 @@ fun CarritoScreen(
             )
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
+                modifier = Modifier.weight(1f),
+                // contentPadding (y no padding) para que la sombra de las
+                // tarjetas no se corte en los bordes
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(carrito, key = { it.producto.id }) { item ->
-                    FilaCarrito(
+                    TarjetaProductoCarrito(
                         item = item,
                         onIncrementar = { onIncrementar(item.producto) },
                         onDecrementar = { onDecrementar(item.producto) },
                         onEliminar = { onEliminar(item.producto) }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
         }
@@ -117,8 +129,9 @@ fun CarritoScreen(
 
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
 
+/** Flecha para volver, título y cuántas unidades hay en el carrito. */
 @Composable
-private fun EncabezadoCarrito(onVolver: () -> Unit) {
+private fun EncabezadoCarrito(onVolver: () -> Unit, cantidadProductos: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,39 +139,63 @@ private fun EncabezadoCarrito(onVolver: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onVolver) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = AzulTexto)
         }
         Text(
             text = "Mi carrito",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = AzulTexto
         )
+        if (cantidadProductos > 0) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "($cantidadProductos)",
+                style = MaterialTheme.typography.titleMedium,
+                color = GrisTexto
+            )
+        }
     }
 }
 
+/**
+ * Tarjeta blanca de un producto del carrito: imagen, nombre, precio por
+ * unidad, selector de cantidad, botón eliminar y el subtotal de la línea.
+ */
 @Composable
-private fun FilaCarrito(
+private fun TarjetaProductoCarrito(
     item: ItemCarrito,
     onIncrementar: () -> Unit,
     onDecrementar: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val forma = RoundedCornerShape(18.dp)
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = forma,
+                ambientColor = AzulTexto.copy(alpha = 0.08f),
+                spotColor = AzulTexto.copy(alpha = 0.14f)
+            )
+            .background(Blanco, forma)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Placeholder de imagen: reemplázalo por Image(painterResource(...))
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .background(GrisClaro, RoundedCornerShape(10.dp)),
+                .size(64.dp)
+                .background(VerdeBodega.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.ShoppingBasket,
                 contentDescription = item.producto.nombre,
                 tint = VerdeBodega,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(30.dp)
             )
         }
 
@@ -168,26 +205,39 @@ private fun FilaCarrito(
             Text(
                 text = item.producto.nombre,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = AzulTexto,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+            // "c/u" = cada uno: precio por unidad
             Text(
-                text = "S/ %.2f".format(item.producto.precio),
+                text = "S/ %.2f c/u".format(item.producto.precio),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GrisTexto
+            )
+            Spacer(Modifier.height(6.dp))
+            SelectorCantidad(
+                cantidad = item.cantidad,
+                onIncrementar = onIncrementar,
+                onDecrementar = onDecrementar
             )
         }
 
-        SelectorCantidad(
-            cantidad = item.cantidad,
-            onIncrementar = onIncrementar,
-            onDecrementar = onDecrementar
-        )
-
-        IconButton(onClick = onEliminar) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Eliminar ${item.producto.nombre}",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+        // A la derecha: eliminar arriba y el subtotal de la línea abajo
+        Column(horizontalAlignment = Alignment.End) {
+            IconButton(onClick = onEliminar) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar ${item.producto.nombre}",
+                    tint = GrisTexto
+                )
+            }
+            Text(
+                text = "S/ %.2f".format(item.producto.precio * item.cantidad),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = VerdeBodega
             )
         }
     }
@@ -209,7 +259,7 @@ private fun EstadoCarritoVacio(onIrAInicio: () -> Unit, modifier: Modifier = Mod
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .background(GrisClaro, CircleShape),
+                .background(Blanco, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -238,7 +288,8 @@ private fun EstadoCarritoVacio(onIrAInicio: () -> Unit, modifier: Modifier = Mod
 }
 
 /**
- * Montos y botón "Continuar pedido".
+ * Panel blanco inferior (esquinas de arriba redondeadas) con los montos
+ * y el botón "Continuar pedido".
  * @param hayProductos si es false (carrito vacío) se ocultan los montos
  *        y el botón queda desactivado
  */
@@ -250,7 +301,15 @@ private fun ResumenYBoton(
     hayProductos: Boolean,
     onContinuarPedido: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+    val forma = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(16.dp, forma, spotColor = AzulTexto.copy(alpha = 0.12f))
+            .background(Blanco, forma)
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)
+    ) {
         // Los montos solo tienen sentido si hay algo que comprar
         if (hayProductos) {
             MontosResumen(subtotal = subtotal, delivery = delivery, total = total)
@@ -265,32 +324,35 @@ private fun ResumenYBoton(
     }
 }
 
-/** Subtotal, delivery y total (en verde). */
+/** Subtotal, delivery y total (en verde y más grande). */
 @Composable
 private fun MontosResumen(subtotal: Double, delivery: Double, total: Double) {
     Column {
         FilaResumen(etiqueta = "Subtotal", valor = subtotal)
         FilaResumen(etiqueta = "Costo de delivery", valor = delivery)
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = GrisClaro)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Total",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = AzulTexto
             )
             Text(
                 text = "S/ %.2f".format(total),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = VerdeBodega
             )
         }
     }
 }
 
+/** Una fila "etiqueta ........ S/ 0.00" en gris. */
 @Composable
 private fun FilaResumen(etiqueta: String, valor: Double) {
     Row(
@@ -299,8 +361,8 @@ private fun FilaResumen(etiqueta: String, valor: Double) {
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = etiqueta, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = "S/ %.2f".format(valor), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = etiqueta, color = GrisTexto)
+        Text(text = "S/ %.2f".format(valor), color = GrisTexto)
     }
 }
 
@@ -340,4 +402,3 @@ private fun CarritoVacioPreview() {
         )
     }
 }
-

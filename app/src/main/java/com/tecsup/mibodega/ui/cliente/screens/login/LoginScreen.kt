@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -37,8 +41,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
+import com.tecsup.mibodega.ui.theme.AzulTexto
+import com.tecsup.mibodega.ui.theme.Blanco
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
+import com.tecsup.mibodega.ui.theme.GrisTexto
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
@@ -47,6 +54,9 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * porque solo esta pantalla necesita los textos mientras el usuario escribe.
  * No navega sola: avisa hacia arriba con onIngresar / onIrARegistro / onVolver
  * y ClienteApp decide a dónde ir (state hoisting).
+ *
+ * Diseño: fondo gris claro, saludo con un candado verde y el formulario
+ * dentro de una tarjeta blanca de esquinas redondeadas.
  *
  * @param onIngresar recibe el teléfono escrito. La contraseña no se envía hacia
  *        arriba porque todavía no hay un servidor que la valide: por ahora solo
@@ -68,57 +78,63 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // El fondo va ANTES de safeDrawingPadding para que también pinte
+            // detrás de la barra de estado
+            .background(GrisClaro)
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
     ) {
         EncabezadoLogin(onVolver = onVolver)
 
-        Spacer(Modifier.height(24.dp))
-
-        // Ícono de candado en un círculo gris, como el avatar de RegistroScreen
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null, // decorativo
-                tint = VerdeBodega,
-                modifier = Modifier
-                    .size(84.dp)
-                    .background(GrisClaro, CircleShape)
-                    .padding(20.dp)
-            )
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        CampoTexto(
-            etiqueta = "Teléfono",
-            valor = telefono,
-            onValorCambia = { telefono = it },
-            placeholder = "987 654 321",
-            teclado = KeyboardType.Phone
-        )
         Spacer(Modifier.height(16.dp))
 
-        CampoTexto(
-            etiqueta = "Contraseña",
-            valor = contrasena,
-            onValorCambia = { contrasena = it },
-            placeholder = "••••••",
-            // Oculta lo que se escribe (muestra puntos)
-            esContrasena = true
-        )
+        SaludoLogin()
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(24.dp))
 
-        BotonPrimario(
-            texto = "Ingresar",
-            onClick = { onIngresar(telefono.trim()) },
-            habilitado = camposCompletos
-        )
+        // Tarjeta blanca con el formulario
+        val forma = RoundedCornerShape(24.dp)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 10.dp,
+                    shape = forma,
+                    ambientColor = AzulTexto.copy(alpha = 0.08f),
+                    spotColor = AzulTexto.copy(alpha = 0.14f)
+                ),
+            shape = forma,
+            colors = CardDefaults.cardColors(containerColor = Blanco)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                CampoTexto(
+                    etiqueta = "Teléfono",
+                    valor = telefono,
+                    onValorCambia = { telefono = it },
+                    placeholder = "987 654 321",
+                    teclado = KeyboardType.Phone
+                )
+                Spacer(Modifier.height(16.dp))
+
+                CampoTexto(
+                    etiqueta = "Contraseña",
+                    valor = contrasena,
+                    onValorCambia = { contrasena = it },
+                    placeholder = "••••••",
+                    // Oculta lo que se escribe (muestra puntos)
+                    esContrasena = true
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                BotonPrimario(
+                    texto = "Ingresar",
+                    onClick = { onIngresar(telefono.trim()) },
+                    habilitado = camposCompletos
+                )
+            }
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -139,20 +155,51 @@ private fun EncabezadoLogin(onVolver: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onVolver) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = AzulTexto)
         }
         Text(
             text = "Iniciar sesión",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = AzulTexto
         )
     }
-    Text(
-        text = "Ingresa con tu teléfono y tu contraseña",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+}
+
+/** Candado blanco en un círculo verde + "¡Hola de nuevo!" + indicación. */
+@Composable
+private fun SaludoLogin() {
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center
-    )
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .shadow(8.dp, CircleShape, spotColor = VerdeBodega.copy(alpha = 0.4f))
+                .background(VerdeBodega, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null, // decorativo
+                tint = Blanco,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "¡Hola de nuevo!",
+            style = MaterialTheme.typography.titleLarge,
+            color = AzulTexto
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Ingresa con tu teléfono y tu contraseña",
+            style = MaterialTheme.typography.bodyMedium,
+            color = GrisTexto,
+            textAlign = TextAlign.Center
+        )
+    }
 }
 
 /**
@@ -171,7 +218,7 @@ private fun EnlaceRegistro(onIrARegistro: () -> Unit) {
         Text(
             text = "¿No tienes cuenta? ",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = GrisTexto
         )
         Text(
             text = "Regístrate",

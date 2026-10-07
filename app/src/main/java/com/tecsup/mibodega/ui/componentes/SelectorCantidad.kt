@@ -1,6 +1,7 @@
 package com.tecsup.mibodega.ui.componentes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tecsup.mibodega.ui.theme.AzulTexto
 import com.tecsup.mibodega.ui.theme.GrisBorde
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
@@ -57,7 +59,8 @@ fun SelectorCantidad(
             Text(
                 text = "$cantidad",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = AzulTexto
             )
         }
 
@@ -70,6 +73,13 @@ fun SelectorCantidad(
     }
 }
 
+/**
+ * Botón redondo de "−" o "+".
+ * IconButton siempre ocupa al menos 48 dp (área cómoda para el dedo); si el
+ * fondo se le pone a él, el círculo se dibuja de 48 dp y se sale del diseño.
+ * Por eso el círculo visible es un Box de 32 dp DENTRO del botón.
+ * El "−" (sin relleno) lleva un borde gris para verse sobre fondos blancos.
+ */
 @Composable
 private fun BotonCirculo(
     icono: ImageVector,
@@ -79,25 +89,33 @@ private fun BotonCirculo(
 ) {
     IconButton(
         onClick = onClick,
-        enabled = habilitado,
-        modifier = Modifier
-            .size(32.dp)
-            .background(
-                color = if (relleno) VerdeBodega else MaterialTheme.colorScheme.surface,
-                shape = CircleShape
-            )
+        enabled = habilitado
     ) {
         val colorIcono = when {
             relleno -> MaterialTheme.colorScheme.onPrimary
             habilitado -> VerdeBodega
             else -> GrisBorde
         }
-        Icon(
-            imageVector = icono,
-            contentDescription = null,
-            tint = colorIcono,
-            modifier = Modifier.size(18.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(
+                    color = if (relleno) VerdeBodega else MaterialTheme.colorScheme.surface,
+                    shape = CircleShape
+                )
+                .then(
+                    // then(): agrega el borde solo cuando el botón no tiene relleno
+                    if (relleno) Modifier else Modifier.border(1.dp, GrisBorde, CircleShape)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icono,
+                contentDescription = null,
+                tint = colorIcono,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
