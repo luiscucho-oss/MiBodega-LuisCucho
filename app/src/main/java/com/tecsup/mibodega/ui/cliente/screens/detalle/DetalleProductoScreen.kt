@@ -1,5 +1,6 @@
 package com.tecsup.mibodega.ui.cliente.screens.detalle
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,7 +75,7 @@ fun DetalleProductoScreen(
     ) {
         // Box: la imagen abajo y el encabezado (volver / favorito) encima
         Box {
-            ImagenProducto()
+            ImagenProducto(producto)
             EncabezadoDetalle(
                 onVolver = onVolver,
                 // statusBarsPadding: los botones no quedan debajo de la barra de estado
@@ -211,23 +213,17 @@ private fun FondoCircular(contenido: @Composable () -> Unit) {
 }
 
 @Composable
-private fun ImagenProducto() {
-    // Placeholder de imagen: reemplázalo por Image(painterResource(...))
-    // cuando tengan la foto real de cada producto.
-    Box(
+private fun ImagenProducto(producto: Producto) {
+    // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
+    Image(
+        painter = painterResource(producto.imagen),
+        contentDescription = producto.nombre,
+        contentScale = ContentScale.Fit,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1.1f)
-            .background(VerdeBodega.copy(alpha = 0.10f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.ShoppingBasket,
-            contentDescription = null,
-            tint = VerdeBodega,
-            modifier = Modifier.size(110.dp)
-        )
-    }
+            .background(VerdeBodega.copy(alpha = 0.10f))
+    )
 }
 
 /** Píldora verde suave con el nombre de la categoría. */

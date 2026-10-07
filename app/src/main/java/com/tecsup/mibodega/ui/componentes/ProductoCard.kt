@@ -1,5 +1,6 @@
 package com.tecsup.mibodega.ui.componentes
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,8 +25,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,7 +42,7 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * Solo muestra datos y avisa cuando la tocan o cuando tocan "+";
  * no sabe nada de navegación ni del carrito.
  *
- * @param colorAcento color del fondo de la imagen y del ícono. Por defecto
+ * @param colorAcento color del fondo de la imagen. Por defecto
  *        VerdeBodega; Categorías le pasa el color propio de cada categoría.
  */
 @Composable
@@ -70,23 +73,18 @@ fun ProductoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Placeholder de imagen: reemplázalo por Image(painterResource(...))
-            // cuando tengan las fotos reales de cada producto.
-            Box(
+            // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
+            Image(
+                painter = painterResource(producto.imagen),
+                contentDescription = producto.nombre,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1.25f)
+                    .clip(RoundedCornerShape(14.dp))
                     // El color de acento muy transparente (12 %) como fondo suave
-                    .background(colorAcento.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingBasket,
-                    contentDescription = producto.nombre,
-                    tint = colorAcento,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
+                    .background(colorAcento.copy(alpha = 0.12f))
+            )
 
             Spacer(Modifier.height(10.dp))
 

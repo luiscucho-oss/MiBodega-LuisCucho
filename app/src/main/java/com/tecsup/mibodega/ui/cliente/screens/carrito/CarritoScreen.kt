@@ -1,5 +1,6 @@
 package com.tecsup.mibodega.ui.cliente.screens.carrito
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RemoveShoppingCart
-import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -184,20 +187,16 @@ private fun TarjetaProductoCarrito(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Placeholder de imagen: reemplázalo por Image(painterResource(...))
-        Box(
+        // Foto del producto (res/drawable)
+        Image(
+            painter = painterResource(item.producto.imagen),
+            contentDescription = item.producto.nombre,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .size(64.dp)
-                .background(VerdeBodega.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.ShoppingBasket,
-                contentDescription = item.producto.nombre,
-                tint = VerdeBodega,
-                modifier = Modifier.size(30.dp)
-            )
-        }
+                .clip(RoundedCornerShape(14.dp))
+                .background(VerdeBodega.copy(alpha = 0.12f))
+        )
 
         Spacer(Modifier.width(12.dp))
 
