@@ -28,6 +28,7 @@ import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
 import com.tecsup.mibodega.ui.cliente.screens.login.LoginScreen
 import com.tecsup.mibodega.ui.cliente.screens.pedidos.PedidosScreen
+import com.tecsup.mibodega.ui.cliente.screens.perfil.PerfilScreen
 import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
 import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
 
@@ -144,6 +145,26 @@ fun ClienteApp() {
         composable(Rutas.PEDIDOS) {
             PedidosScreen(
                 pedidos = pedidos,
+                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+            )
+        }
+
+        composable(Rutas.PERFIL) {
+            PerfilScreen(
+                // Siempre hay usuario aquí (se entra por Login o Registro); el
+                // ejemplo es solo un respaldo para que nunca llegue null
+                usuario = usuario ?: usuarioDeEjemplo,
+                onCerrarSesion = {
+                    // Al salir, el carrito de esta sesión ya no sirve
+                    carrito = emptyList()
+
+                    // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
+                    // (Inicio, Perfil...) y deja solo Bienvenida. Así, "atrás" en
+                    // Bienvenida cierra la app en vez de volver a una sesión cerrada.
+                    navController.navigate(Rutas.BIENVENIDA) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
                 onNavegar = { pestana -> navController.navegarAPestana(pestana) }
             )
         }
