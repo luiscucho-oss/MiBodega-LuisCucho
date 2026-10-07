@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +26,8 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +55,12 @@ import com.tecsup.mibodega.ui.componentes.ProductoCard
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
+
+/**
+ * Cómo se ordena el grid de productos. NINGUNO = el orden original del catálogo.
+ * Es un enum (y no un Boolean) porque hay tres casos posibles, no dos.
+ */
+private enum class OrdenPrecio { NINGUNO, MENOR_A_MAYOR, MAYOR_A_MENOR }
 
 /**
  * Pantalla 3: Inicio / Productos (mockup "Cliente").
@@ -77,11 +88,21 @@ fun InicioScreen(
 ) {
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
     var textoBusqueda by remember { mutableStateOf("") }
+    var orden by remember { mutableStateOf(OrdenPrecio.NINGUNO) }
 
     val productosFiltrados = productos.filter { producto ->
         val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
         val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
         coincideCategoria && coincideBusqueda
+    }
+
+    // Primero se filtra y después se ordena, así el orden se combina con la
+    // categoría y la búsqueda. sortedBy devuelve una lista NUEVA (no cambia la
+    // original), por eso al volver a NINGUNO reaparece el orden del catálogo.
+    val productosOrdenados = when (orden) {
+        OrdenPrecio.NINGUNO -> productosFiltrados
+        OrdenPrecio.MENOR_A_MAYOR -> productosFiltrados.sortedBy { it.precio }
+        OrdenPrecio.MAYOR_A_MENOR -> productosFiltrados.sortedByDescending { it.precio }
     }
 
     Scaffold(
@@ -162,6 +183,14 @@ fun InicioScreen(
                 }
             }
 
+            FiltroOrden(
+                orden = orden,
+                // Tocar el chip que ya está marcado lo desmarca y vuelve al orden original
+                onOrdenClick = { nuevoOrden ->
+                    orden = if (orden == nuevoOrden) OrdenPrecio.NINGUNO else nuevoOrden
+                }
+            )
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -169,7 +198,7 @@ fun InicioScreen(
                 contentPadding = PaddingValues(vertical = 12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(productosFiltrados) { producto ->
+                items(productosOrdenados) { producto ->
                     ProductoCard(
                         producto = producto,
                         esFavorito = producto.id in favoritos,
@@ -202,6 +231,56 @@ private fun ChipCategoria(
     ) {
         Text(text = texto, color = contenido, fontWeight = FontWeight.Medium)
     }
+}
+
+/** Fila "Precio: [Menor a mayor] [Mayor a menor]" para ordenar el grid. */
+@Composable
+private fun FiltroOrden(
+    orden: OrdenPrecio,
+    onOrdenClick: (OrdenPrecio) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Por si la pantalla es muy angosta: la fila se puede deslizar
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Precio:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        ChipOrden(
+            texto = "Menor a mayor",
+            seleccionado = orden == OrdenPrecio.MENOR_A_MAYOR,
+            onClick = { onOrdenClick(OrdenPrecio.MENOR_A_MAYOR) }
+        )
+        ChipOrden(
+            texto = "Mayor a menor",
+            seleccionado = orden == OrdenPrecio.MAYOR_A_MENOR,
+            onClick = { onOrdenClick(OrdenPrecio.MAYOR_A_MENOR) }
+        )
+    }
+}
+
+/** FilterChip de Material 3 con el verde de la app cuando está marcado. */
+@Composable
+private fun ChipOrden(
+    texto: String,
+    seleccionado: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = seleccionado,
+        onClick = onClick,
+        label = { Text(texto, style = MaterialTheme.typography.bodySmall) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = VerdeBodega,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+        )
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)
