@@ -8,6 +8,18 @@ package com.tecsup.mibodega.ui.cliente.modelo
  */
 val listaCategorias = listOf("Todos", "Bebidas", "Abarrotes", "Snacks")
 
+/**
+ * Usuario de ejemplo: se usa cuando alguien entra por Login sin haberse
+ * registrado antes en esta sesión (todavía no hay una base de datos de
+ * usuarios de donde leer sus datos reales).
+ */
+val usuarioDeEjemplo = Usuario(
+    nombre = "Juan Pérez",
+    telefono = "987654321",
+    direccion = "Av. Los Olivos 123",
+    referencia = "Frente al parque"
+)
+
 val listaProductosFake = listOf(
     Producto(
         id = 1,

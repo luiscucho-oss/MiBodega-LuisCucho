@@ -53,6 +53,11 @@ fun RegistroScreen(
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
 
+    // Como estos datos se guardan en ClienteApp y se muestran en Perfil,
+    // "Crear cuenta" solo se activa si los 4 campos tienen texto
+    // (isNotBlank: un campo con solo espacios cuenta como vacío)
+    val camposCompletos = listOf(nombre, telefono, direccion, referencia).all { it.isNotBlank() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -117,7 +122,9 @@ fun RegistroScreen(
 
         BotonPrimario(
             texto = "Crear cuenta",
-            onClick = { onCrearCuenta(nombre, telefono, direccion, referencia) }
+            // trim(): se envían los datos sin espacios sobrantes al inicio o al final
+            onClick = { onCrearCuenta(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim()) },
+            habilitado = camposCompletos
         )
 
         Spacer(Modifier.height(24.dp))

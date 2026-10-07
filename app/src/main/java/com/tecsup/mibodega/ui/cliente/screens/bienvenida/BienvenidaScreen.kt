@@ -14,9 +14,15 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -39,13 +45,22 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
 /**
  * Pantalla 1: Registro / Login (mockup "Cliente").
  * No sabe navegar sola: recibe qué hacer por parámetro (callbacks).
+ * Lo único que maneja ella misma es si el diálogo de Términos está
+ * abierto o cerrado, porque es estado visual que solo esta pantalla usa.
  */
 @Composable
 fun BienvenidaScreen(
     onRegistrarse: () -> Unit,
-    onIniciarSesion: () -> Unit,
-    onTerminos: () -> Unit
+    onIniciarSesion: () -> Unit
 ) {
+    // true = el diálogo de Términos y Condiciones está visible
+    var mostrarTerminos by remember { mutableStateOf(false) }
+
+    // El diálogo se dibuja encima de la pantalla solo mientras mostrarTerminos sea true
+    if (mostrarTerminos) {
+        DialogoTerminos(onCerrar = { mostrarTerminos = false })
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -94,7 +109,8 @@ fun BienvenidaScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        PieTerminos(onTerminos = onTerminos)
+        // Tocar el enlace solo abre el diálogo (cambia el estado local)
+        PieTerminos(onTerminos = { mostrarTerminos = true })
 
         Spacer(Modifier.height(24.dp))
     }
@@ -147,11 +163,36 @@ private fun PieTerminos(onTerminos: () -> Unit) {
     }
 }
 
+/**
+ * Diálogo con un resumen corto de los términos. Se cierra con "Entendido"
+ * o tocando fuera del diálogo (onDismissRequest).
+ */
+@Composable
+private fun DialogoTerminos(onCerrar: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onCerrar,
+        title = { Text("Términos y Condiciones") },
+        text = {
+            Text(
+                "Al usar Mi Bodega aceptas que tus datos (nombre, teléfono y dirección) " +
+                        "se usen solo para preparar y entregar tus pedidos. Los precios " +
+                        "pueden cambiar sin previo aviso y el pago se realiza al recibir " +
+                        "el pedido."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onCerrar) {
+                Text("Entendido", color = VerdeBodega)
+            }
+        }
+    )
+}
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun BienvenidaPreview() {
     BodegaTheme {
-        BienvenidaScreen({}, {}, {})
+        BienvenidaScreen(onRegistrarse = {}, onIniciarSesion = {})
     }
 }
 
