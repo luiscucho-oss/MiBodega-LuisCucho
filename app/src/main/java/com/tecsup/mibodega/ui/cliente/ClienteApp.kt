@@ -158,6 +158,9 @@ fun ClienteApp() {
                 // Siempre hay usuario aquí (se entra por Login o Registro); el
                 // ejemplo es solo un respaldo para que nunca llegue null
                 usuario = usuario ?: usuarioDeEjemplo,
+                // Resumen de compras calculado a partir de la lista de pedidos
+                cantidadPedidos = pedidos.size,
+                totalGastado = pedidos.sumOf { it.total },
                 onCerrarSesion = {
                     // Al salir, el carrito de esta sesión ya no sirve
                     carrito = emptyList()
