@@ -1,5 +1,9 @@
 package com.tecsup.mibodega.ui.cliente
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -10,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -103,7 +108,49 @@ fun ClienteApp(
     ) {
         NavHost(
             navController = navController,
-            startDestination = Rutas.BIENVENIDA
+            startDestination = Rutas.BIENVENIDA,
+            // Animación al cambiar de pantalla. Por dentro, NavHost usa AnimatedContent:
+            // cada lambda se ejecuta dentro de un AnimatedContentTransitionScope (que
+            // conoce la pantalla de salida, initialState, y la de llegada, targetState)
+            // y devuelve cómo entra (EnterTransition) o sale (ExitTransition) cada una.
+            // - Al avanzar (navigate): la nueva entra desde la derecha y la anterior
+            //   sale por la izquierda.
+            // - Al volver (popBackStack o "atrás"): al revés, para que se note el regreso.
+            // - Entre pestañas de la barra inferior solo hay fundido: son secciones
+            //   hermanas, no una pantalla "encima" de otra.
+            // El "+" combina dos animaciones para que se ejecuten a la vez.
+            enterTransition = {
+                if (esCambioDePestana()) {
+                    fadeIn(tween(DURACION_ANIMACION))
+                } else {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(DURACION_ANIMACION)) +
+                            fadeIn(tween(DURACION_ANIMACION))
+                }
+            },
+            exitTransition = {
+                if (esCambioDePestana()) {
+                    fadeOut(tween(DURACION_ANIMACION))
+                } else {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(DURACION_ANIMACION)) +
+                            fadeOut(tween(DURACION_ANIMACION))
+                }
+            },
+            popEnterTransition = {
+                if (esCambioDePestana()) {
+                    fadeIn(tween(DURACION_ANIMACION))
+                } else {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(DURACION_ANIMACION)) +
+                            fadeIn(tween(DURACION_ANIMACION))
+                }
+            },
+            popExitTransition = {
+                if (esCambioDePestana()) {
+                    fadeOut(tween(DURACION_ANIMACION))
+                } else {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(DURACION_ANIMACION)) +
+                            fadeOut(tween(DURACION_ANIMACION))
+                }
+            }
         ) {
             composable(Rutas.BIENVENIDA) {
                 BienvenidaScreen(
@@ -372,6 +419,19 @@ fun ClienteApp(
         }
     }
 }
+
+/** Duración (en milisegundos) de las animaciones entre pantallas. */
+private const val DURACION_ANIMACION = 300
+
+/** Las 4 rutas de la barra inferior: entre ellas la animación es solo un fundido. */
+private val RUTAS_PESTANAS = setOf(Rutas.INICIO, Rutas.CATEGORIAS, Rutas.PEDIDOS, Rutas.PERFIL)
+
+/**
+ * true si se va de una pestaña de la barra inferior a otra (ej. Inicio → Perfil).
+ * initialState es la pantalla que se va y targetState la que llega.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.esCambioDePestana(): Boolean =
+    initialState.destination.route in RUTAS_PESTANAS && targetState.destination.route in RUTAS_PESTANAS
 
 /**
  * Navegación de la barra inferior (Inicio, Categorías, Pedidos y Perfil).
