@@ -84,7 +84,12 @@ fun InicioScreen(
         val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
         // El nombre también se normaliza: así "cafe" encuentra "Café" y "COSTENO" encuentra "Costeño".
         // Si la búsqueda está vacía, contains("") es true y no se filtra nada.
-        val coincideBusqueda = normalizarTexto(producto.nombre).contains(busquedaNormalizada)
+        val coincideNombre = normalizarTexto(producto.nombre).contains(busquedaNormalizada)
+        // También se busca en la descripción, con la misma normalización:
+        // así "chocolate" encuentra "Galleta Oreo" aunque no esté en su nombre
+        val coincideDescripcion = normalizarTexto(producto.descripcion).contains(busquedaNormalizada)
+        // Basta con que coincida UNO de los dos (||)
+        val coincideBusqueda = coincideNombre || coincideDescripcion
         coincideCategoria && coincideBusqueda
     }
 
