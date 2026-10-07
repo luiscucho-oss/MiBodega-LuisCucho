@@ -236,6 +236,8 @@ fun ClienteApp() {
                 subtotal = subtotal,
                 delivery = COSTO_DELIVERY,
                 total = total,
+                // El formulario empieza lleno con los datos guardados del usuario
+                datosIniciales = usuario ?: usuarioDeEjemplo,
                 onVolver = { navController.popBackStack() },
                 onConfirmarPedido = { nombre, telefono, direccion, referencia ->
                     // Por ahora los pedidos viven en memoria, en la lista "pedidos"

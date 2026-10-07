@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,14 +32,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tecsup.mibodega.ui.cliente.modelo.Usuario
+import com.tecsup.mibodega.ui.cliente.modelo.usuarioDeEjemplo
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
+import com.tecsup.mibodega.ui.theme.AzulTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
@@ -50,6 +57,8 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * @param subtotal suma de (precio x cantidad) de todo el carrito
  * @param delivery costo fijo del delivery
  * @param total subtotal + delivery
+ * @param datosIniciales datos guardados del usuario: con ellos se rellena el
+ *        formulario al abrir la pantalla (se pueden cambiar para este pedido)
  * @param onConfirmarPedido recibe los datos ya validados (ningún campo vacío)
  */
 @OptIn(ExperimentalMaterial3Api::class) // TopAppBar todavía es experimental en Material 3
@@ -58,16 +67,20 @@ fun DatosEntregaScreen(
     subtotal: Double,
     delivery: Double,
     total: Double,
+    datosIniciales: Usuario,
     onVolver: () -> Unit,
     onConfirmarPedido: (nombre: String, telefono: String, direccion: String, referencia: String) -> Unit
 ) {
     // Estado del formulario: vive aquí con remember (igual que en RegistroScreen)
     // porque solo esta pantalla necesita los textos mientras el usuario escribe.
     // "by" permite leer y escribir la variable como si fuera un String normal.
-    var nombre by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
-    var referencia by remember { mutableStateOf("") }
+    // Cada campo EMPIEZA con el dato guardado del usuario, así no tiene que
+    // volver a escribir lo mismo en cada pedido. remember usa ese valor solo
+    // la primera vez: después manda lo que el usuario escriba.
+    var nombre by remember { mutableStateOf(datosIniciales.nombre) }
+    var telefono by remember { mutableStateOf(datosIniciales.telefono) }
+    var direccion by remember { mutableStateOf(datosIniciales.direccion) }
+    var referencia by remember { mutableStateOf(datosIniciales.referencia) }
 
     // El botón solo se activa si los 4 campos tienen texto. Se usa isNotBlank()
     // (y no isNotEmpty()) para que un campo con solo espacios cuente como vacío.
@@ -107,8 +120,12 @@ fun DatosEntregaScreen(
                 text = "¿A dónde llevamos tu pedido?",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
             )
+
+            AvisoDatosGuardados()
+
+            Spacer(Modifier.height(20.dp))
 
             FormularioEntrega(
                 nombre = nombre,
@@ -156,6 +173,34 @@ fun DatosEntregaScreen(
 }
 
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
+
+/**
+ * Aviso verde suave que explica que el formulario ya viene lleno con los
+ * datos de la cuenta y que se pueden cambiar solo para este pedido.
+ */
+@Composable
+private fun AvisoDatosGuardados() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(VerdeBodega.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = VerdeBodega,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "Usamos los datos de tu cuenta. Puedes cambiarlos para este pedido.",
+            style = MaterialTheme.typography.bodySmall,
+            color = AzulTexto
+        )
+    }
+}
 
 /**
  * Los 4 campos del formulario. No guarda estado propio: recibe cada valor
@@ -273,6 +318,7 @@ private fun DatosEntregaPreview() {
             subtotal = 15.50,
             delivery = 4.00,
             total = 19.50,
+            datosIniciales = usuarioDeEjemplo,
             onVolver = {},
             onConfirmarPedido = { _, _, _, _ -> }
         )
