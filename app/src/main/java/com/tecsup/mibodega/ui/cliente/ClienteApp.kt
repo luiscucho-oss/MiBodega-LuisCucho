@@ -29,28 +29,8 @@ import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
  *   hacia abajo a Inicio, Detalle, Carrito y Entrega.
  * Ninguna Screen navega sola ni modifica el carrito directamente:
  * todas reciben funciones (lambdas) desde aquí (state hoisting).
+ * Las rutas están en Rutas.kt (mismo paquete, por eso no necesitan import).
  */
-private object Rutas {
-    const val BIENVENIDA = "bienvenida"
-    const val REGISTRO = "registro"
-    const val INICIO = "inicio"
-    const val DETALLE = "detalle/{productoId}"
-    const val CARRITO = "carrito"
-
-    // Pantalla del formulario de entrega (nombre, teléfono, dirección y referencia)
-    // y del resumen del pedido. Se llega aquí desde el carrito con "Continuar pedido".
-    // No lleva argumentos en la ruta: el resumen se calcula en ClienteApp a partir
-    // del carrito, que ya vive aquí arriba.
-    const val ENTREGA = "entrega"
-
-    // Pantalla final de "¡Pedido confirmado!". Se llega aquí desde ENTREGA al tocar
-    // "Confirmar pedido". Más adelante usaremos popUpTo para que, al presionar
-    // "atrás" en esta pantalla, el usuario no regrese al carrito ni al formulario.
-    const val CONFIRMACION = "confirmacion"
-
-    fun detalle(productoId: Int) = "detalle/$productoId"
-}
-
 @Composable
 fun ClienteApp() {
     val navController = rememberNavController()
