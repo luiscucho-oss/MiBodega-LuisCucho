@@ -17,6 +17,7 @@ import com.tecsup.mibodega.ui.cliente.modelo.Usuario
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.cliente.modelo.usuarioDeEjemplo
 import com.tecsup.mibodega.ui.cliente.screens.bienvenida.BienvenidaScreen
+import com.tecsup.mibodega.ui.cliente.screens.categorias.CategoriasScreen
 import com.tecsup.mibodega.ui.cliente.screens.carrito.COSTO_DELIVERY
 import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
 import com.tecsup.mibodega.ui.cliente.screens.confirmacion.ConfirmacionScreen
@@ -106,6 +107,21 @@ fun ClienteApp() {
 
         composable(Rutas.INICIO) {
             InicioScreen(
+                cantidadCarrito = carrito.sumOf { it.cantidad },
+                onVerCarrito = { navController.navigate(Rutas.CARRITO) },
+                onProductoClick = { producto ->
+                    navController.navigate(Rutas.detalle(producto.id))
+                },
+                onAgregarProducto = { producto ->
+                    carrito = agregarOSumarProducto(carrito, producto, 1)
+                },
+                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+            )
+        }
+
+        composable(Rutas.CATEGORIAS) {
+            // Mismos callbacks que Inicio: ver detalle, agregar con "+" y ver carrito
+            CategoriasScreen(
                 cantidadCarrito = carrito.sumOf { it.cantidad },
                 onVerCarrito = { navController.navigate(Rutas.CARRITO) },
                 onProductoClick = { producto ->
