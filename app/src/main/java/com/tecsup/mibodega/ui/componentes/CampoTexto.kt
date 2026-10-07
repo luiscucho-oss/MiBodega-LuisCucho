@@ -12,13 +12,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
  * Input con label arriba (fuera del recuadro), como en los mockups
- * de Registro y Datos de entrega. Se usa en: Registro, Datos de entrega.
+ * de Registro y Datos de entrega. Se usa en: Login, Registro, Datos de entrega.
  *
  * @param teclado tipo de teclado, ej. KeyboardType.Phone para el teléfono
+ * @param esContrasena si es true, muestra puntos en lugar de las letras y usa
+ *        el teclado de contraseña. Por defecto es false, así que las pantallas
+ *        que ya usaban CampoTexto no cambian.
  */
 @Composable
 fun CampoTexto(
@@ -27,7 +32,8 @@ fun CampoTexto(
     onValorCambia: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
-    teclado: KeyboardType = KeyboardType.Text
+    teclado: KeyboardType = KeyboardType.Text,
+    esContrasena: Boolean = false
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -44,7 +50,13 @@ fun CampoTexto(
             placeholder = placeholder?.let { { Text(it) } },
             singleLine = true,
             shape = RoundedCornerShape(10.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = teclado),
+            // Para contraseñas se fuerza el teclado de contraseña (sin sugerencias ni autocorrector)
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (esContrasena) KeyboardType.Password else teclado
+            ),
+            // PasswordVisualTransformation dibuja "•" en vez de cada letra;
+            // VisualTransformation.None muestra el texto tal cual
+            visualTransformation = if (esContrasena) PasswordVisualTransformation() else VisualTransformation.None,
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
