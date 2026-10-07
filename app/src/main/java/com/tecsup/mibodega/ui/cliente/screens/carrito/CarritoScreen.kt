@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,15 +32,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
+import com.tecsup.mibodega.ui.componentes.BotonSecundario
 import com.tecsup.mibodega.ui.componentes.SelectorCantidad
+import com.tecsup.mibodega.ui.theme.AzulTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
+import com.tecsup.mibodega.ui.theme.GrisTexto
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 // Público (sin "private") para que ClienteApp use el mismo valor al armar
@@ -49,6 +55,9 @@ const val COSTO_DELIVERY = 4.00
  * Pantalla 5: Mi carrito (mockup "Cliente").
  * No guarda estado propio: el carrito viene de ClienteApp y cualquier
  * cambio (sumar, restar, eliminar) se avisa hacia arriba con callbacks.
+ * Si el carrito está vacío, muestra un estado vacío y desactiva "Continuar pedido".
+ *
+ * @param onIrAInicio botón "Volver al inicio" del estado vacío
  */
 @Composable
 fun CarritoScreen(
@@ -57,7 +66,8 @@ fun CarritoScreen(
     onIncrementar: (Producto) -> Unit,
     onDecrementar: (Producto) -> Unit,
     onEliminar: (Producto) -> Unit,
-    onContinuarPedido: () -> Unit
+    onContinuarPedido: () -> Unit,
+    onIrAInicio: () -> Unit
 ) {
     val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
     val total = subtotal + COSTO_DELIVERY
@@ -69,20 +79,28 @@ fun CarritoScreen(
     ) {
         EncabezadoCarrito(onVolver = onVolver)
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(carrito, key = { it.producto.id }) { item ->
-                FilaCarrito(
-                    item = item,
-                    onIncrementar = { onIncrementar(item.producto) },
-                    onDecrementar = { onDecrementar(item.producto) },
-                    onEliminar = { onEliminar(item.producto) }
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        if (carrito.isEmpty()) {
+            // weight(1f): el estado vacío ocupa todo el espacio libre del medio
+            EstadoCarritoVacio(
+                onIrAInicio = onIrAInicio,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(carrito, key = { it.producto.id }) { item ->
+                    FilaCarrito(
+                        item = item,
+                        onIncrementar = { onIncrementar(item.producto) },
+                        onDecrementar = { onDecrementar(item.producto) },
+                        onEliminar = { onEliminar(item.producto) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
             }
         }
 
@@ -90,6 +108,8 @@ fun CarritoScreen(
             subtotal = subtotal,
             delivery = COSTO_DELIVERY,
             total = total,
+            // Con el carrito vacío no tiene sentido pedir: botón desactivado
+            hayProductos = carrito.isNotEmpty(),
             onContinuarPedido = onContinuarPedido
         )
     }
@@ -173,14 +193,82 @@ private fun FilaCarrito(
     }
 }
 
+/**
+ * Estado vacío: ícono grande del carrito, mensaje y botón para volver
+ * a Inicio (avisa hacia arriba; ClienteApp decide cómo navegar).
+ */
+@Composable
+private fun EstadoCarritoVacio(onIrAInicio: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .background(GrisClaro, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.RemoveShoppingCart,
+                contentDescription = null, // decorativo: el texto lo explica
+                tint = VerdeBodega,
+                modifier = Modifier.size(56.dp)
+            )
+        }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            text = "Tu carrito está vacío",
+            style = MaterialTheme.typography.titleMedium,
+            color = AzulTexto
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "Agrega productos desde Inicio o Categorías para hacer tu pedido.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = GrisTexto,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+        BotonSecundario(texto = "Volver al inicio", onClick = onIrAInicio)
+    }
+}
+
+/**
+ * Montos y botón "Continuar pedido".
+ * @param hayProductos si es false (carrito vacío) se ocultan los montos
+ *        y el botón queda desactivado
+ */
 @Composable
 private fun ResumenYBoton(
     subtotal: Double,
     delivery: Double,
     total: Double,
+    hayProductos: Boolean,
     onContinuarPedido: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        // Los montos solo tienen sentido si hay algo que comprar
+        if (hayProductos) {
+            MontosResumen(subtotal = subtotal, delivery = delivery, total = total)
+            Spacer(Modifier.height(16.dp))
+        }
+
+        BotonPrimario(
+            texto = "Continuar pedido",
+            onClick = onContinuarPedido,
+            habilitado = hayProductos
+        )
+    }
+}
+
+/** Subtotal, delivery y total (en verde). */
+@Composable
+private fun MontosResumen(subtotal: Double, delivery: Double, total: Double) {
+    Column {
         FilaResumen(etiqueta = "Subtotal", valor = subtotal)
         FilaResumen(etiqueta = "Costo de delivery", valor = delivery)
 
@@ -200,13 +288,6 @@ private fun ResumenYBoton(
                 color = VerdeBodega
             )
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        BotonPrimario(
-            texto = "Continuar pedido",
-            onClick = onContinuarPedido
-        )
     }
 }
 
@@ -238,7 +319,24 @@ private fun CarritoPreview() {
             onIncrementar = {},
             onDecrementar = {},
             onEliminar = {},
-            onContinuarPedido = {}
+            onContinuarPedido = {},
+            onIrAInicio = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun CarritoVacioPreview() {
+    BodegaTheme {
+        CarritoScreen(
+            carrito = emptyList(),
+            onVolver = {},
+            onIncrementar = {},
+            onDecrementar = {},
+            onEliminar = {},
+            onContinuarPedido = {},
+            onIrAInicio = {}
         )
     }
 }

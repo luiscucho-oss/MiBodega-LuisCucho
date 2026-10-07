@@ -214,7 +214,15 @@ fun ClienteApp() {
                 onEliminar = { producto ->
                     carrito = carrito.filterNot { it.producto.id == producto.id }
                 },
-                onContinuarPedido = { navController.navigate(Rutas.ENTREGA) }
+                onContinuarPedido = { navController.navigate(Rutas.ENTREGA) },
+                onIrAInicio = {
+                    // Igual que "Volver al inicio" de Confirmación: saca el carrito
+                    // (y lo que haya encima de Inicio) y reutiliza el Inicio existente
+                    navController.navigate(Rutas.INICIO) {
+                        popUpTo(Rutas.INICIO)
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
