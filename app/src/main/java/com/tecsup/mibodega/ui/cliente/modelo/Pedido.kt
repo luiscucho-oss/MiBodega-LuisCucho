@@ -8,10 +8,13 @@ package com.tecsup.mibodega.ui.cliente.modelo
  * @param productos copia de lo que tenía el carrito al confirmar
  * @param total subtotal + delivery
  * @param direccion a dónde se entrega
+ * @param fecha momento en que se confirmó, en milisegundos. Por defecto es
+ *        "ahora" (System.currentTimeMillis()), así no hay que pasarla al crearlo.
  */
 data class Pedido(
     val numero: Int,
     val productos: List<ItemCarrito>,
     val total: Double,
-    val direccion: String
+    val direccion: String,
+    val fecha: Long = System.currentTimeMillis()
 )

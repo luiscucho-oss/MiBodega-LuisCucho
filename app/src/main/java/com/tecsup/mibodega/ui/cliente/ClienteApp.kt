@@ -147,6 +147,8 @@ fun ClienteApp() {
         composable(Rutas.PEDIDOS) {
             PedidosScreen(
                 pedidos = pedidos,
+                // "Ir a comprar" del estado vacío lleva a la pestaña Inicio
+                onIrAComprar = { navController.navegarAPestana(PestanaNavegacion.INICIO) },
                 onNavegar = { pestana -> navController.navegarAPestana(pestana) }
             )
         }
