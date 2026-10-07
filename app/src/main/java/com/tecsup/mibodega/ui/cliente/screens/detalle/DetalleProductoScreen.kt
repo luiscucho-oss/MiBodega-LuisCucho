@@ -46,11 +46,16 @@ import com.tecsup.mibodega.ui.theme.RojoPrecio
  * Guarda su propia cantidad seleccionada (remember) mientras el usuario
  * decide cuánto quiere; solo al tocar "Agregar al carrito" le avisa
  * a ClienteApp cuánto agregar.
+ *
+ * @param esFavorito si el producto está en la lista de favoritos de ClienteApp
+ * @param onFavoritoClick avisa que se tocó el corazón (ClienteApp lo pone o lo quita)
  */
 @Composable
 fun DetalleProductoScreen(
     producto: Producto,
+    esFavorito: Boolean,
     onVolver: () -> Unit,
+    onFavoritoClick: () -> Unit,
     onAgregarAlCarrito: (Producto, Int) -> Unit
 ) {
     var cantidad by remember { mutableStateOf(1) }
@@ -60,7 +65,11 @@ fun DetalleProductoScreen(
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        EncabezadoDetalle(onVolver = onVolver)
+        EncabezadoDetalle(
+            esFavorito = esFavorito,
+            onVolver = onVolver,
+            onFavoritoClick = onFavoritoClick
+        )
 
         ImagenProducto(producto)
 
@@ -112,13 +121,17 @@ fun DetalleProductoScreen(
     }
 }
 
+/**
+ * Flecha para volver y corazón de favorito. El favorito ya no es estado local:
+ * vive en ClienteApp para que se conserve al salir del detalle y para que la
+ * pantalla Mis favoritos y las tarjetas de Inicio muestren lo mismo.
+ */
 @Composable
-private fun EncabezadoDetalle(onVolver: () -> Unit) {
-    // Estado LOCAL del favorito: solo este encabezado lo usa, así que vive aquí
-    // con remember (igual que la cantidad en DetalleProductoScreen). Por ahora
-    // no se guarda en ningún lado: al salir del detalle vuelve a false.
-    var esFavorito by remember { mutableStateOf(false) }
-
+private fun EncabezadoDetalle(
+    esFavorito: Boolean,
+    onVolver: () -> Unit,
+    onFavoritoClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -129,9 +142,9 @@ private fun EncabezadoDetalle(onVolver: () -> Unit) {
         IconButton(onClick = onVolver) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
         }
-        // Cada toque invierte el valor (true ↔ false); al cambiar el estado,
-        // Compose vuelve a dibujar el ícono con la nueva versión
-        IconButton(onClick = { esFavorito = !esFavorito }) {
+        // Cada toque avisa a ClienteApp, que lo pone o lo quita de favoritos; al
+        // cambiar ese estado, Compose vuelve a dibujar el ícono con la nueva versión
+        IconButton(onClick = onFavoritoClick) {
             Icon(
                 // Corazón lleno si es favorito, corazón vacío (solo borde) si no
                 imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -164,7 +177,9 @@ private fun DetalleProductoPreview() {
     BodegaTheme {
         DetalleProductoScreen(
             producto = listaProductosFake.first { it.nombre == "Coca-Cola Original" },
+            esFavorito = true,
             onVolver = {},
+            onFavoritoClick = {},
             onAgregarAlCarrito = { _, _ -> }
         )
     }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
@@ -56,6 +58,8 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  *
  * @param productos lista completa (fake por ahora, luego vendrá de un ViewModel)
  * @param cantidadCarrito para el badge del carrito en la topBar
+ * @param favoritos ids de los productos marcados con el corazón
+ * @param onVerFavoritos abre la pantalla Mis favoritos (corazón de la topBar)
  * @param onNavegar avisa qué pestaña de la barra inferior se tocó
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,9 +67,12 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
 fun InicioScreen(
     productos: List<Producto> = listaProductosFake,
     cantidadCarrito: Int,
+    favoritos: Set<Int>,
     onVerCarrito: () -> Unit,
+    onVerFavoritos: () -> Unit,
     onProductoClick: (Producto) -> Unit,
     onAgregarProducto: (Producto) -> Unit,
+    onFavoritoClick: (Producto) -> Unit,
     onNavegar: (PestanaNavegacion) -> Unit
 ) {
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
@@ -82,6 +89,13 @@ fun InicioScreen(
             TopAppBar(
                 title = { Text("Mi Bodega", fontWeight = FontWeight.Bold) },
                 actions = {
+                    // Corazón: abre Mis favoritos. Se ve lleno si ya hay alguno marcado.
+                    IconButton(onClick = onVerFavoritos) {
+                        Icon(
+                            imageVector = if (favoritos.isEmpty()) Icons.Default.FavoriteBorder else Icons.Default.Favorite,
+                            contentDescription = "Mis favoritos"
+                        )
+                    }
                     IconButton(onClick = onVerCarrito) {
                         BadgedBox(
                             badge = {
@@ -158,8 +172,10 @@ fun InicioScreen(
                 items(productosFiltrados) { producto ->
                     ProductoCard(
                         producto = producto,
+                        esFavorito = producto.id in favoritos,
                         onClick = { onProductoClick(producto) },
-                        onAgregar = { onAgregarProducto(producto) }
+                        onAgregar = { onAgregarProducto(producto) },
+                        onFavoritoClick = { onFavoritoClick(producto) }
                     )
                 }
             }
@@ -194,9 +210,12 @@ private fun InicioPreview() {
     BodegaTheme {
         InicioScreen(
             cantidadCarrito = 3,
+            favoritos = setOf(5),
             onVerCarrito = {},
+            onVerFavoritos = {},
             onProductoClick = {},
             onAgregarProducto = {},
+            onFavoritoClick = {},
             onNavegar = {}
         )
     }

@@ -42,15 +42,18 @@ import com.tecsup.mibodega.ui.theme.BodegaTheme
  * avisa hacia arriba, igual que en InicioScreen (state hoisting).
  *
  * @param cantidadCarrito para el badge del carrito en la topBar
+ * @param favoritos ids de los productos marcados con el corazón
  */
 @OptIn(ExperimentalMaterial3Api::class) // TopAppBar todavía es experimental en Material 3
 @Composable
 fun CategoriasScreen(
     productos: List<Producto> = listaProductosFake,
     cantidadCarrito: Int,
+    favoritos: Set<Int>,
     onVerCarrito: () -> Unit,
     onProductoClick: (Producto) -> Unit,
     onAgregarProducto: (Producto) -> Unit,
+    onFavoritoClick: (Producto) -> Unit,
     onNavegar: (PestanaNavegacion) -> Unit
 ) {
     // "Todos" es solo un filtro de Inicio, no una categoría real: se quita
@@ -97,8 +100,10 @@ fun CategoriasScreen(
                 SeccionCategoria(
                     nombre = categoria,
                     productos = productos.filter { it.categoria == categoria },
+                    favoritos = favoritos,
                     onProductoClick = onProductoClick,
-                    onAgregarProducto = onAgregarProducto
+                    onAgregarProducto = onAgregarProducto,
+                    onFavoritoClick = onFavoritoClick
                 )
             }
         }
@@ -112,8 +117,10 @@ fun CategoriasScreen(
 private fun SeccionCategoria(
     nombre: String,
     productos: List<Producto>,
+    favoritos: Set<Int>,
     onProductoClick: (Producto) -> Unit,
-    onAgregarProducto: (Producto) -> Unit
+    onAgregarProducto: (Producto) -> Unit,
+    onFavoritoClick: (Producto) -> Unit
 ) {
     Column {
         Text(
@@ -134,8 +141,10 @@ private fun SeccionCategoria(
             items(productos, key = { it.id }) { producto ->
                 ProductoCard(
                     producto = producto,
+                    esFavorito = producto.id in favoritos,
                     onClick = { onProductoClick(producto) },
                     onAgregar = { onAgregarProducto(producto) },
+                    onFavoritoClick = { onFavoritoClick(producto) },
                     // En una fila horizontal la tarjeta necesita un ancho fijo
                     // (en el grid de Inicio el ancho lo da la columna)
                     modifier = Modifier.width(150.dp)
@@ -151,9 +160,11 @@ private fun CategoriasPreview() {
     BodegaTheme {
         CategoriasScreen(
             cantidadCarrito = 2,
+            favoritos = setOf(1),
             onVerCarrito = {},
             onProductoClick = {},
             onAgregarProducto = {},
+            onFavoritoClick = {},
             onNavegar = {}
         )
     }

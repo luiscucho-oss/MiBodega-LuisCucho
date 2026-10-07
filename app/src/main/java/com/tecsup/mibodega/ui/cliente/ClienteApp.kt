@@ -25,6 +25,7 @@ import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
 import com.tecsup.mibodega.ui.cliente.screens.confirmacion.ConfirmacionScreen
 import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
 import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
+import com.tecsup.mibodega.ui.cliente.screens.favoritos.FavoritosScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
 import com.tecsup.mibodega.ui.cliente.screens.login.LoginScreen
 import com.tecsup.mibodega.ui.cliente.screens.pedidos.PedidosScreen
@@ -36,7 +37,7 @@ import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
  * "Director de orquesta" de la app cliente:
  * - Tiene el NavHost con las rutas de cada pantalla.
  * - Tiene el estado del carrito (List<ItemCarrito>), que se reparte
- *   hacia abajo a Inicio, Detalle, Carrito y Entrega.
+ *   hacia abajo a Inicio, Detalle, Carrito y Entrega, y el de favoritos.
  * Ninguna Screen navega sola ni modifica el carrito directamente:
  * todas reciben funciones (lambdas) desde aquí (state hoisting).
  * Las rutas están en Rutas.kt (mismo paquete, por eso no necesitan import).
@@ -60,6 +61,17 @@ fun ClienteApp() {
     // Teléfono de la cuenta recién creada en Registro. Login lo usa para llenar
     // el campo y mostrar "¡Cuenta creada!". null = se llegó a Login desde Bienvenida.
     var telefonoRecienRegistrado by remember { mutableStateOf<String?>(null) }
+
+    // Ids de los productos marcados con el corazón. Es un Set (y no una List)
+    // porque un producto está o no está en favoritos: nunca se repite.
+    var favoritos by remember { mutableStateOf<Set<Int>>(emptySet()) }
+
+    // Pone o quita un producto de favoritos. Se define una sola vez aquí porque
+    // lo usan Inicio, Categorías, Detalle y Favoritos. Igual que con el carrito,
+    // no se modifica el Set: se reemplaza por uno nuevo (+ o -) y Compose lo detecta.
+    val alternarFavorito: (Producto) -> Unit = { producto ->
+        favoritos = if (producto.id in favoritos) favoritos - producto.id else favoritos + producto.id
+    }
 
     // Pedidos confirmados. mutableStateListOf es una lista "observable":
     // al hacer add(), Compose redibuja solo las pantallas que la leen (Pedidos).
@@ -147,21 +159,25 @@ fun ClienteApp() {
         composable(Rutas.INICIO) {
             InicioScreen(
                 cantidadCarrito = carrito.sumOf { it.cantidad },
+                favoritos = favoritos,
                 onVerCarrito = { navController.navigate(Rutas.CARRITO) },
+                onVerFavoritos = { navController.navigate(Rutas.FAVORITOS) },
                 onProductoClick = { producto ->
                     navController.navigate(Rutas.detalle(producto.id))
                 },
                 onAgregarProducto = { producto ->
                     carrito = agregarOSumarProducto(carrito, producto, 1)
                 },
+                onFavoritoClick = alternarFavorito,
                 onNavegar = { pestana -> navController.navegarAPestana(pestana) }
             )
         }
 
         composable(Rutas.CATEGORIAS) {
-            // Mismos callbacks que Inicio: ver detalle, agregar con "+" y ver carrito
+            // Mismos callbacks que Inicio: ver detalle, agregar con "+", favorito y ver carrito
             CategoriasScreen(
                 cantidadCarrito = carrito.sumOf { it.cantidad },
+                favoritos = favoritos,
                 onVerCarrito = { navController.navigate(Rutas.CARRITO) },
                 onProductoClick = { producto ->
                     navController.navigate(Rutas.detalle(producto.id))
@@ -169,6 +185,7 @@ fun ClienteApp() {
                 onAgregarProducto = { producto ->
                     carrito = agregarOSumarProducto(carrito, producto, 1)
                 },
+                onFavoritoClick = alternarFavorito,
                 onNavegar = { pestana -> navController.navegarAPestana(pestana) }
             )
         }
@@ -186,9 +203,10 @@ fun ClienteApp() {
                 // es solo un respaldo para que nunca llegue null
                 usuario = usuario ?: usuarioDeEjemplo,
                 onCerrarSesion = {
-                    // Al salir, el carrito de esta sesión ya no sirve y ya no hay
-                    // nadie con la sesión iniciada (las cuentas sí se conservan)
+                    // Al salir, el carrito y los favoritos de esta sesión ya no sirven
+                    // y ya no hay nadie con la sesión iniciada (las cuentas sí se conservan)
                     carrito = emptyList()
+                    favoritos = emptySet()
                     usuario = null
 
                     // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
@@ -211,11 +229,29 @@ fun ClienteApp() {
 
             DetalleProductoScreen(
                 producto = producto,
+                esFavorito = producto.id in favoritos,
                 onVolver = { navController.popBackStack() },
+                onFavoritoClick = { alternarFavorito(producto) },
                 onAgregarAlCarrito = { productoSeleccionado, cantidad ->
                     carrito = agregarOSumarProducto(carrito, productoSeleccionado, cantidad)
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Rutas.FAVORITOS) {
+            FavoritosScreen(
+                // Se arma la lista a partir de los ids guardados, en el orden del catálogo
+                productos = listaProductosFake.filter { it.id in favoritos },
+                onVolver = { navController.popBackStack() },
+                onProductoClick = { producto ->
+                    navController.navigate(Rutas.detalle(producto.id))
+                },
+                onAgregarProducto = { producto ->
+                    carrito = agregarOSumarProducto(carrito, producto, 1)
+                },
+                // Todos están marcados, así que tocar el corazón los quita de la lista
+                onQuitarFavorito = alternarFavorito
             )
         }
 

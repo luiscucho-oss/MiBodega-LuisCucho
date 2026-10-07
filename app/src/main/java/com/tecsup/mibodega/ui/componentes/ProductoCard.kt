@@ -3,6 +3,7 @@ package com.tecsup.mibodega.ui.componentes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -32,18 +35,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.theme.GrisClaro
+import com.tecsup.mibodega.ui.theme.RojoPrecio
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
- * Tarjeta de producto usada en el grid de Inicio.
- * Solo muestra datos y avisa cuando la tocan o cuando tocan "+";
- * no sabe nada de navegación ni del carrito.
+ * Tarjeta de producto usada en Inicio, Categorías y Favoritos.
+ * Solo muestra datos y avisa cuando la tocan, cuando tocan "+" o el corazón;
+ * no sabe nada de navegación, del carrito ni de la lista de favoritos.
+ *
+ * @param esFavorito corazón lleno (rojo) si es true, solo el borde si es false
  */
 @Composable
 fun ProductoCard(
     producto: Producto,
+    esFavorito: Boolean,
     onClick: () -> Unit,
     onAgregar: () -> Unit,
+    onFavoritoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -54,17 +62,42 @@ fun ProductoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
-            Image(
-                painter = painterResource(producto.imagen),
-                contentDescription = producto.nombre,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.3f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(GrisClaro)
-            )
+            // Box: el corazón se dibuja ENCIMA de la foto, en la esquina superior derecha
+            Box {
+                // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
+                Image(
+                    painter = painterResource(producto.imagen),
+                    contentDescription = producto.nombre,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.3f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(GrisClaro)
+                )
+
+                IconButton(
+                    onClick = onFavoritoClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(30.dp)
+                        // Círculo casi opaco para que el corazón se vea sobre cualquier foto
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        // Dice qué hará el toque, para el lector de pantalla
+                        contentDescription = if (esFavorito) {
+                            "Quitar ${producto.nombre} de favoritos"
+                        } else {
+                            "Agregar ${producto.nombre} a favoritos"
+                        },
+                        tint = if (esFavorito) RojoPrecio else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
 

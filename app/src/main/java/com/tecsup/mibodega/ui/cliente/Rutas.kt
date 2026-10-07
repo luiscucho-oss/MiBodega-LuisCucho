@@ -22,6 +22,10 @@ object Rutas {
     const val DETALLE = "detalle/{productoId}"
     const val CARRITO = "carrito"
 
+    // Lista de productos marcados con el corazón. Se abre con el corazón de la
+    // barra superior de Inicio.
+    const val FAVORITOS = "favoritos"
+
     // Pantalla del formulario de entrega (nombre, teléfono, dirección y referencia)
     // y del resumen del pedido. Se llega aquí desde el carrito con "Continuar pedido".
     // No lleva argumentos en la ruta: el resumen se calcula en ClienteApp a partir
