@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material3.Icon
@@ -114,6 +115,11 @@ fun DetalleProductoScreen(
 
 @Composable
 private fun EncabezadoDetalle(onVolver: () -> Unit) {
+    // Estado LOCAL del favorito: solo este encabezado lo usa, así que vive aquí
+    // con remember (igual que la cantidad en DetalleProductoScreen). Por ahora
+    // no se guarda en ningún lado: al salir del detalle vuelve a false.
+    var esFavorito by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,8 +130,17 @@ private fun EncabezadoDetalle(onVolver: () -> Unit) {
         IconButton(onClick = onVolver) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
         }
-        IconButton(onClick = { /* TODO: guardar como favorito */ }) {
-            Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorito")
+        // Cada toque invierte el valor (true ↔ false); al cambiar el estado,
+        // Compose vuelve a dibujar el ícono con la nueva versión
+        IconButton(onClick = { esFavorito = !esFavorito }) {
+            Icon(
+                // Corazón lleno si es favorito, corazón vacío (solo borde) si no
+                imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                // La descripción cambia para que el lector de pantalla diga qué hará el toque
+                contentDescription = if (esFavorito) "Quitar de favoritos" else "Agregar a favoritos",
+                // Rojo cuando está marcado; color normal del texto cuando no
+                tint = if (esFavorito) RojoPrecio else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
