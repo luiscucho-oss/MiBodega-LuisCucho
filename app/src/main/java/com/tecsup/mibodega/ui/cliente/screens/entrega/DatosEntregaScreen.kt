@@ -46,7 +46,6 @@ import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
-import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
@@ -214,7 +213,7 @@ private fun SelectorTipoEntrega(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GrisClaro, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
             .padding(vertical = 4.dp)
             // selectableGroup: el lector de pantalla anuncia las opciones como un
             // solo grupo de RadioButton ("1 de 2", "2 de 2")
@@ -336,7 +335,7 @@ private fun ResumenPedido(subtotal: Double, tipoEntrega: TipoEntrega, total: Dou
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GrisClaro, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
         Text(

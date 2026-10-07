@@ -181,7 +181,7 @@ private fun CarritoVacio(
             tint = VerdeBodega,
             modifier = Modifier
                 .size(96.dp)
-                .background(GrisClaro, CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 .padding(24.dp)
         )
 
@@ -250,7 +250,8 @@ private fun FilaCarrito(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Foto del producto (res/drawable)
+        // Foto del producto (res/drawable). Las fotos tienen fondo blanco, así que el
+        // recuadro se deja gris claro también en modo oscuro.
         Image(
             painter = painterResource(item.producto.imagen),
             contentDescription = item.producto.nombre,

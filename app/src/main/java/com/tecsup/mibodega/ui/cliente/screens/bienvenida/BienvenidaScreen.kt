@@ -37,9 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.R
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.BotonSecundario
-import com.tecsup.mibodega.ui.theme.AzulEnlace
 import com.tecsup.mibodega.ui.theme.BodegaTheme
-import com.tecsup.mibodega.ui.theme.FondoClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
@@ -66,7 +64,8 @@ fun BienvenidaScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(FondoClaro, MaterialTheme.colorScheme.background),
+                    // tertiaryContainer: celeste en modo claro y azul noche en modo oscuro
+                    colors = listOf(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.background),
                     endY = 900f
                 )
             )
@@ -157,7 +156,8 @@ private fun PieTerminos(onTerminos: () -> Unit) {
         Text(
             text = "Términos y Condiciones",
             style = MaterialTheme.typography.bodySmall,
-            color = AzulEnlace,
+            // secondary = el azul de enlace del tema (más claro en modo oscuro)
+            color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.clickable(onClick = onTerminos)
         )
     }

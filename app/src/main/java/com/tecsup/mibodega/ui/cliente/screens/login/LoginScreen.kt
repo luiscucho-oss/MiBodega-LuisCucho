@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
-import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
@@ -101,7 +100,7 @@ fun LoginScreen(
                 tint = VerdeBodega,
                 modifier = Modifier
                     .size(84.dp)
-                    .background(GrisClaro, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                     .padding(20.dp)
             )
         }

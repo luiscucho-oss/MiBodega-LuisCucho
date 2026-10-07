@@ -13,3 +13,15 @@ val RojoPrecio    = Color(0xFFE0342A)   // precio destacado en detalle
 val FondoClaro    = Color(0xFFEAF4FB)   // fondo celeste superior (bienvenida)
 val GrisBorde     = Color(0xFFCBD3DD)   // bordes de inputs y botón secundario
 val Blanco        = Color(0xFFFFFFFF)
+
+// Paleta del modo oscuro (se activa con el Switch de Perfil). El verde de la
+// marca (VerdeBodega) se mantiene igual en los dos modos.
+val FondoOscuro      = Color(0xFF121417)   // fondo de las pantallas
+val SuperficieOscura = Color(0xFF1C1F24)   // barras, tarjetas y diálogos
+val GrisOscuro       = Color(0xFF2A2E35)   // fondo de inputs y chips (equivale a GrisClaro)
+val TextoClaro       = Color(0xFFE6E8EB)   // títulos y texto principal
+val GrisTextoClaro   = Color(0xFFA9B1BC)   // subtítulos / texto secundario
+val GrisBordeOscuro  = Color(0xFF454B54)   // bordes de inputs y botón secundario
+val AzulEnlaceClaro  = Color(0xFF6EA8FF)   // enlaces (el azul normal casi no se lee en oscuro)
+val RojoClaro        = Color(0xFFFF6B61)   // errores
+val AzulNoche        = Color(0xFF16263A)   // fondo superior de Bienvenida (equivale a FondoClaro)

@@ -34,7 +34,6 @@ import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.componentes.ProductoCard
 import com.tecsup.mibodega.ui.theme.BodegaTheme
-import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.RojoPrecio
 
 /**
@@ -114,7 +113,7 @@ private fun SinFavoritos(modifier: Modifier = Modifier) {
             tint = RojoPrecio,
             modifier = Modifier
                 .size(96.dp)
-                .background(GrisClaro, CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 .padding(24.dp)
         )
 

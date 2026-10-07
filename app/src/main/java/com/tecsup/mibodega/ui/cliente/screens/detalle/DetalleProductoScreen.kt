@@ -160,6 +160,7 @@ private fun EncabezadoDetalle(
 @Composable
 private fun ImagenProducto(producto: Producto) {
     // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
+    // Las fotos tienen fondo blanco: el recuadro sigue gris claro en modo oscuro.
     Image(
         painter = painterResource(producto.imagen),
         contentDescription = producto.nombre,

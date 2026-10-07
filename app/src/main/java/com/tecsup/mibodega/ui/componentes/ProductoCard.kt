@@ -65,6 +65,7 @@ fun ProductoCard(
             // Box: el corazón se dibuja ENCIMA de la foto, en la esquina superior derecha
             Box {
                 // Foto del producto (res/drawable). Fit muestra el empaque completo sin recortarlo.
+                // Las fotos tienen fondo blanco: el recuadro sigue gris claro en modo oscuro.
                 Image(
                     painter = painterResource(producto.imagen),
                     contentDescription = producto.nombre,

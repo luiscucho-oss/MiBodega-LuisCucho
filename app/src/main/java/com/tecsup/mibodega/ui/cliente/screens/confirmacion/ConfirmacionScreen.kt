@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.componentes.BotonSecundario
 import com.tecsup.mibodega.ui.theme.BodegaTheme
-import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
@@ -92,7 +91,7 @@ fun ConfirmacionScreen(
 
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
 
-/** Check verde dentro de un círculo gris claro: indica que todo salió bien. */
+/** Check verde dentro de un círculo gris: indica que todo salió bien. */
 @Composable
 private fun IconoExito() {
     Icon(
@@ -102,7 +101,7 @@ private fun IconoExito() {
         tint = VerdeBodega,
         modifier = Modifier
             .size(120.dp)
-            .background(GrisClaro, CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
             .padding(12.dp)
     )
 }

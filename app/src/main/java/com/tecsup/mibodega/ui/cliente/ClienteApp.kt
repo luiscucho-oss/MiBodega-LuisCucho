@@ -1,11 +1,15 @@
 package com.tecsup.mibodega.ui.cliente
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -41,9 +45,16 @@ import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
  * Ninguna Screen navega sola ni modifica el carrito directamente:
  * todas reciben funciones (lambdas) desde aquí (state hoisting).
  * Las rutas están en Rutas.kt (mismo paquete, por eso no necesitan import).
+ *
+ * @param modoOscuro el estado vive en MainActivity (arriba del tema); aquí solo
+ *        se le pasa a Perfil para que dibuje el Switch
+ * @param onModoOscuroCambia avisa a MainActivity cuando se toca el Switch
  */
 @Composable
-fun ClienteApp() {
+fun ClienteApp(
+    modoOscuro: Boolean,
+    onModoOscuroCambia: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
 
     // El carrito vive aquí arriba, no en ninguna Screen.
@@ -82,271 +93,282 @@ fun ClienteApp() {
     // al hacer add(), Compose redibuja solo las pantallas que la leen (Pedidos).
     val pedidos = remember { mutableStateListOf<Pedido>() }
 
-    NavHost(
-        navController = navController,
-        startDestination = Rutas.BIENVENIDA
+    // Surface pinta el fondo del tema (blanco o casi negro) detrás de todas las
+    // pantallas y hace que los textos sin color propio usen el color de texto del
+    // tema. Sin esto, las pantallas sin Scaffold (Login, Carrito, Detalle...) se
+    // verían con fondo blanco y letras claras en modo oscuro.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        composable(Rutas.BIENVENIDA) {
-            BienvenidaScreen(
-                onRegistrarse = { navController.navigate(Rutas.REGISTRO) },
-                onIniciarSesion = {
-                    telefonoRecienRegistrado = null
-                    navController.navigate(Rutas.LOGIN)
-                }
-                // Términos y condiciones: el diálogo lo abre y lo cierra la misma
-                // BienvenidaScreen, porque es estado visual que solo ella usa.
-            )
-        }
-
-        composable(Rutas.LOGIN) {
-            LoginScreen(
-                telefonoRegistrado = telefonoRecienRegistrado,
-                onVolver = { navController.popBackStack() },
-                onIngresar = { telefono, contrasena ->
-                    // Se busca una cuenta con ese teléfono Y esa contraseña: la cuenta
-                    // fija del código o alguna creada en Registro
-                    val cuenta = cuentas.find { it.telefono == telefono && it.contrasena == contrasena }
-
-                    if (cuenta != null) {
-                        usuario = cuenta
+        NavHost(
+            navController = navController,
+            startDestination = Rutas.BIENVENIDA
+        ) {
+            composable(Rutas.BIENVENIDA) {
+                BienvenidaScreen(
+                    onRegistrarse = { navController.navigate(Rutas.REGISTRO) },
+                    onIniciarSesion = {
                         telefonoRecienRegistrado = null
+                        navController.navigate(Rutas.LOGIN)
+                    }
+                    // Términos y condiciones: el diálogo lo abre y lo cierra la misma
+                    // BienvenidaScreen, porque es estado visual que solo ella usa.
+                )
+            }
 
-                        // Pila antes:   Bienvenida → Login
-                        // Pila después: Inicio
-                        // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
-                        // ya con la sesión iniciada, "atrás" en Inicio cierra la app en vez
-                        // de volver a la pantalla de ingreso.
-                        navController.navigate(Rutas.INICIO) {
-                            popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+            composable(Rutas.LOGIN) {
+                LoginScreen(
+                    telefonoRegistrado = telefonoRecienRegistrado,
+                    onVolver = { navController.popBackStack() },
+                    onIngresar = { telefono, contrasena ->
+                        // Se busca una cuenta con ese teléfono Y esa contraseña: la cuenta
+                        // fija del código o alguna creada en Registro
+                        val cuenta = cuentas.find { it.telefono == telefono && it.contrasena == contrasena }
+
+                        if (cuenta != null) {
+                            usuario = cuenta
+                            telefonoRecienRegistrado = null
+
+                            // Pila antes:   Bienvenida → Login
+                            // Pila después: Inicio
+                            // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
+                            // ya con la sesión iniciada, "atrás" en Inicio cierra la app en vez
+                            // de volver a la pantalla de ingreso.
+                            navController.navigate(Rutas.INICIO) {
+                                popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+                            }
                         }
-                    }
 
-                    // Se le responde a LoginScreen si los datos eran correctos:
-                    // con false muestra el error y se queda donde está
-                    cuenta != null
-                },
-                // Si no tiene cuenta, va al formulario de registro
-                onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
-            )
-        }
+                        // Se le responde a LoginScreen si los datos eran correctos:
+                        // con false muestra el error y se queda donde está
+                        cuenta != null
+                    },
+                    // Si no tiene cuenta, va al formulario de registro
+                    onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
+                )
+            }
 
-        composable(Rutas.REGISTRO) {
-            RegistroScreen(
-                onVolver = { navController.popBackStack() },
-                onCrearCuenta = { nuevoUsuario ->
-                    // El teléfono es con lo que se inicia sesión: no puede haber dos
-                    // cuentas con el mismo
-                    val telefonoLibre = cuentas.none { it.telefono == nuevoUsuario.telefono }
+            composable(Rutas.REGISTRO) {
+                RegistroScreen(
+                    onVolver = { navController.popBackStack() },
+                    onCrearCuenta = { nuevoUsuario ->
+                        // El teléfono es con lo que se inicia sesión: no puede haber dos
+                        // cuentas con el mismo
+                        val telefonoLibre = cuentas.none { it.telefono == nuevoUsuario.telefono }
 
-                    if (telefonoLibre) {
-                        // Se guarda la cuenta aquí arriba para que Login pueda validarla
-                        // y, después, Perfil muestre sus datos
-                        cuentas.add(nuevoUsuario)
-                        telefonoRecienRegistrado = nuevoUsuario.telefono
+                        if (telefonoLibre) {
+                            // Se guarda la cuenta aquí arriba para que Login pueda validarla
+                            // y, después, Perfil muestre sus datos
+                            cuentas.add(nuevoUsuario)
+                            telefonoRecienRegistrado = nuevoUsuario.telefono
 
-                        // Registrarse NO inicia sesión: se va a Login para entrar con
-                        // el teléfono y la contraseña que se acaban de crear.
-                        // Pila antes:   Bienvenida → Registro  (o Bienvenida → Login → Registro)
-                        // Pila después: Bienvenida → Login
-                        // popUpTo(BIENVENIDA) saca todo lo que está encima de Bienvenida:
-                        // "atrás" en Login vuelve a Bienvenida y no al formulario ya enviado.
-                        navController.navigate(Rutas.LOGIN) {
-                            popUpTo(Rutas.BIENVENIDA)
+                            // Registrarse NO inicia sesión: se va a Login para entrar con
+                            // el teléfono y la contraseña que se acaban de crear.
+                            // Pila antes:   Bienvenida → Registro  (o Bienvenida → Login → Registro)
+                            // Pila después: Bienvenida → Login
+                            // popUpTo(BIENVENIDA) saca todo lo que está encima de Bienvenida:
+                            // "atrás" en Login vuelve a Bienvenida y no al formulario ya enviado.
+                            navController.navigate(Rutas.LOGIN) {
+                                popUpTo(Rutas.BIENVENIDA)
+                            }
                         }
+
+                        // Con false, RegistroScreen marca el teléfono en rojo
+                        telefonoLibre
                     }
+                )
+            }
 
-                    // Con false, RegistroScreen marca el teléfono en rojo
-                    telefonoLibre
-                }
-            )
-        }
+            composable(Rutas.INICIO) {
+                InicioScreen(
+                    cantidadCarrito = carrito.sumOf { it.cantidad },
+                    favoritos = favoritos,
+                    onVerCarrito = { navController.navigate(Rutas.CARRITO) },
+                    onVerFavoritos = { navController.navigate(Rutas.FAVORITOS) },
+                    onProductoClick = { producto ->
+                        navController.navigate(Rutas.detalle(producto.id))
+                    },
+                    onAgregarProducto = { producto ->
+                        carrito = agregarOSumarProducto(carrito, producto, 1)
+                    },
+                    onFavoritoClick = alternarFavorito,
+                    onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+                )
+            }
 
-        composable(Rutas.INICIO) {
-            InicioScreen(
-                cantidadCarrito = carrito.sumOf { it.cantidad },
-                favoritos = favoritos,
-                onVerCarrito = { navController.navigate(Rutas.CARRITO) },
-                onVerFavoritos = { navController.navigate(Rutas.FAVORITOS) },
-                onProductoClick = { producto ->
-                    navController.navigate(Rutas.detalle(producto.id))
-                },
-                onAgregarProducto = { producto ->
-                    carrito = agregarOSumarProducto(carrito, producto, 1)
-                },
-                onFavoritoClick = alternarFavorito,
-                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
-            )
-        }
+            composable(Rutas.CATEGORIAS) {
+                // Mismos callbacks que Inicio: ver detalle, agregar con "+", favorito y ver carrito
+                CategoriasScreen(
+                    cantidadCarrito = carrito.sumOf { it.cantidad },
+                    favoritos = favoritos,
+                    onVerCarrito = { navController.navigate(Rutas.CARRITO) },
+                    onProductoClick = { producto ->
+                        navController.navigate(Rutas.detalle(producto.id))
+                    },
+                    onAgregarProducto = { producto ->
+                        carrito = agregarOSumarProducto(carrito, producto, 1)
+                    },
+                    onFavoritoClick = alternarFavorito,
+                    onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+                )
+            }
 
-        composable(Rutas.CATEGORIAS) {
-            // Mismos callbacks que Inicio: ver detalle, agregar con "+", favorito y ver carrito
-            CategoriasScreen(
-                cantidadCarrito = carrito.sumOf { it.cantidad },
-                favoritos = favoritos,
-                onVerCarrito = { navController.navigate(Rutas.CARRITO) },
-                onProductoClick = { producto ->
-                    navController.navigate(Rutas.detalle(producto.id))
-                },
-                onAgregarProducto = { producto ->
-                    carrito = agregarOSumarProducto(carrito, producto, 1)
-                },
-                onFavoritoClick = alternarFavorito,
-                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
-            )
-        }
+            composable(Rutas.PEDIDOS) {
+                PedidosScreen(
+                    pedidos = pedidos,
+                    onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+                )
+            }
 
-        composable(Rutas.PEDIDOS) {
-            PedidosScreen(
-                pedidos = pedidos,
-                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
-            )
-        }
+            composable(Rutas.PERFIL) {
+                PerfilScreen(
+                    // Siempre hay usuario aquí (solo se entra por Login); el ejemplo
+                    // es solo un respaldo para que nunca llegue null
+                    usuario = usuario ?: usuarioDeEjemplo,
+                    modoOscuro = modoOscuro,
+                    onModoOscuroCambia = onModoOscuroCambia,
+                    onCerrarSesion = {
+                        // Al salir, el carrito y los favoritos de esta sesión ya no sirven
+                        // y ya no hay nadie con la sesión iniciada (las cuentas sí se conservan)
+                        carrito = emptyList()
+                        favoritos = emptySet()
+                        tipoEntrega = TipoEntrega.DELIVERY
+                        usuario = null
 
-        composable(Rutas.PERFIL) {
-            PerfilScreen(
-                // Siempre hay usuario aquí (solo se entra por Login); el ejemplo
-                // es solo un respaldo para que nunca llegue null
-                usuario = usuario ?: usuarioDeEjemplo,
-                onCerrarSesion = {
-                    // Al salir, el carrito y los favoritos de esta sesión ya no sirven
-                    // y ya no hay nadie con la sesión iniciada (las cuentas sí se conservan)
-                    carrito = emptyList()
-                    favoritos = emptySet()
-                    tipoEntrega = TipoEntrega.DELIVERY
-                    usuario = null
-
-                    // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
-                    // (Inicio, Perfil...) y deja solo Bienvenida. Así, "atrás" en
-                    // Bienvenida cierra la app en vez de volver a una sesión cerrada.
-                    navController.navigate(Rutas.BIENVENIDA) {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
-                },
-                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
-            )
-        }
-
-        composable(
-            route = Rutas.DETALLE,
-            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
-            val producto = listaProductosFake.first { it.id == productoId }
-
-            DetalleProductoScreen(
-                producto = producto,
-                esFavorito = producto.id in favoritos,
-                onVolver = { navController.popBackStack() },
-                onFavoritoClick = { alternarFavorito(producto) },
-                onAgregarAlCarrito = { productoSeleccionado, cantidad ->
-                    carrito = agregarOSumarProducto(carrito, productoSeleccionado, cantidad)
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(Rutas.FAVORITOS) {
-            FavoritosScreen(
-                // Se arma la lista a partir de los ids guardados, en el orden del catálogo
-                productos = listaProductosFake.filter { it.id in favoritos },
-                onVolver = { navController.popBackStack() },
-                onProductoClick = { producto ->
-                    navController.navigate(Rutas.detalle(producto.id))
-                },
-                onAgregarProducto = { producto ->
-                    carrito = agregarOSumarProducto(carrito, producto, 1)
-                },
-                // Todos están marcados, así que tocar el corazón los quita de la lista
-                onQuitarFavorito = alternarFavorito
-            )
-        }
-
-        composable(Rutas.CARRITO) {
-            CarritoScreen(
-                carrito = carrito,
-                tipoEntrega = tipoEntrega,
-                onVolver = { navController.popBackStack() },
-                onIncrementar = { producto ->
-                    carrito = carrito.map {
-                        if (it.producto.id == producto.id) it.copy(cantidad = it.cantidad + 1) else it
-                    }
-                },
-                onDecrementar = { producto ->
-                    carrito = carrito.mapNotNull {
-                        when {
-                            it.producto.id != producto.id -> it
-                            it.cantidad > 1 -> it.copy(cantidad = it.cantidad - 1)
-                            else -> null // si llega a 0, se elimina de la lista
+                        // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
+                        // (Inicio, Perfil...) y deja solo Bienvenida. Así, "atrás" en
+                        // Bienvenida cierra la app en vez de volver a una sesión cerrada.
+                        navController.navigate(Rutas.BIENVENIDA) {
+                            popUpTo(navController.graph.id) { inclusive = true }
                         }
+                    },
+                    onNavegar = { pestana -> navController.navegarAPestana(pestana) }
+                )
+            }
+
+            composable(
+                route = Rutas.DETALLE,
+                arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+                val producto = listaProductosFake.first { it.id == productoId }
+
+                DetalleProductoScreen(
+                    producto = producto,
+                    esFavorito = producto.id in favoritos,
+                    onVolver = { navController.popBackStack() },
+                    onFavoritoClick = { alternarFavorito(producto) },
+                    onAgregarAlCarrito = { productoSeleccionado, cantidad ->
+                        carrito = agregarOSumarProducto(carrito, productoSeleccionado, cantidad)
+                        navController.popBackStack()
                     }
-                },
-                onEliminar = { producto ->
-                    carrito = carrito.filterNot { it.producto.id == producto.id }
-                },
-                onContinuarPedido = { navController.navigate(Rutas.ENTREGA) }
-            )
-        }
+                )
+            }
 
-        composable(Rutas.ENTREGA) {
-            // Los montos se calculan aquí a partir del carrito, con la misma fórmula
-            // que CarritoScreen. DatosEntregaScreen solo los recibe y los muestra.
-            // Como tipoEntrega es estado, al marcar otro RadioButton este bloque se
-            // vuelve a ejecutar y el total se recalcula solo (S/ 4.00 o S/ 0.00 de envío).
-            val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
-            val total = subtotal + tipoEntrega.costo
+            composable(Rutas.FAVORITOS) {
+                FavoritosScreen(
+                    // Se arma la lista a partir de los ids guardados, en el orden del catálogo
+                    productos = listaProductosFake.filter { it.id in favoritos },
+                    onVolver = { navController.popBackStack() },
+                    onProductoClick = { producto ->
+                        navController.navigate(Rutas.detalle(producto.id))
+                    },
+                    onAgregarProducto = { producto ->
+                        carrito = agregarOSumarProducto(carrito, producto, 1)
+                    },
+                    // Todos están marcados, así que tocar el corazón los quita de la lista
+                    onQuitarFavorito = alternarFavorito
+                )
+            }
 
-            DatosEntregaScreen(
-                subtotal = subtotal,
-                tipoEntrega = tipoEntrega,
-                total = total,
-                onTipoEntregaCambia = { tipoEntrega = it },
-                onVolver = { navController.popBackStack() },
-                onConfirmarPedido = { nombre, telefono, direccion, referencia ->
-                    // Por ahora los pedidos viven en memoria, en la lista "pedidos"
-                    // de ClienteApp: no hay un servidor a donde enviarlos, así que
-                    // se pierden al cerrar la app. El número es correlativo.
-                    pedidos.add(
-                        Pedido(
-                            numero = pedidos.size + 1,
-                            productos = carrito,
-                            total = total,
-                            tipoEntrega = tipoEntrega,
-                            direccion = direccion
+            composable(Rutas.CARRITO) {
+                CarritoScreen(
+                    carrito = carrito,
+                    tipoEntrega = tipoEntrega,
+                    onVolver = { navController.popBackStack() },
+                    onIncrementar = { producto ->
+                        carrito = carrito.map {
+                            if (it.producto.id == producto.id) it.copy(cantidad = it.cantidad + 1) else it
+                        }
+                    },
+                    onDecrementar = { producto ->
+                        carrito = carrito.mapNotNull {
+                            when {
+                                it.producto.id != producto.id -> it
+                                it.cantidad > 1 -> it.copy(cantidad = it.cantidad - 1)
+                                else -> null // si llega a 0, se elimina de la lista
+                            }
+                        }
+                    },
+                    onEliminar = { producto ->
+                        carrito = carrito.filterNot { it.producto.id == producto.id }
+                    },
+                    onContinuarPedido = { navController.navigate(Rutas.ENTREGA) }
+                )
+            }
+
+            composable(Rutas.ENTREGA) {
+                // Los montos se calculan aquí a partir del carrito, con la misma fórmula
+                // que CarritoScreen. DatosEntregaScreen solo los recibe y los muestra.
+                // Como tipoEntrega es estado, al marcar otro RadioButton este bloque se
+                // vuelve a ejecutar y el total se recalcula solo (S/ 4.00 o S/ 0.00 de envío).
+                val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
+                val total = subtotal + tipoEntrega.costo
+
+                DatosEntregaScreen(
+                    subtotal = subtotal,
+                    tipoEntrega = tipoEntrega,
+                    total = total,
+                    onTipoEntregaCambia = { tipoEntrega = it },
+                    onVolver = { navController.popBackStack() },
+                    onConfirmarPedido = { nombre, telefono, direccion, referencia ->
+                        // Por ahora los pedidos viven en memoria, en la lista "pedidos"
+                        // de ClienteApp: no hay un servidor a donde enviarlos, así que
+                        // se pierden al cerrar la app. El número es correlativo.
+                        pedidos.add(
+                            Pedido(
+                                numero = pedidos.size + 1,
+                                productos = carrito,
+                                total = total,
+                                tipoEntrega = tipoEntrega,
+                                direccion = direccion
+                            )
                         )
-                    )
 
-                    // Pila antes:   Inicio → Carrito → Entrega
-                    // Pila después: Inicio → Confirmación
-                    // popUpTo(INICIO) saca todo lo que está ENCIMA de Inicio (Carrito y
-                    // Entrega) antes de abrir Confirmación. Así, al presionar "atrás" en
-                    // Confirmación se vuelve a Inicio y no a un carrito ya pagado.
-                    navController.navigate(Rutas.CONFIRMACION) {
-                        popUpTo(Rutas.INICIO)
+                        // Pila antes:   Inicio → Carrito → Entrega
+                        // Pila después: Inicio → Confirmación
+                        // popUpTo(INICIO) saca todo lo que está ENCIMA de Inicio (Carrito y
+                        // Entrega) antes de abrir Confirmación. Así, al presionar "atrás" en
+                        // Confirmación se vuelve a Inicio y no a un carrito ya pagado.
+                        navController.navigate(Rutas.CONFIRMACION) {
+                            popUpTo(Rutas.INICIO)
+                        }
+
+                        // El pedido ya se hizo: se vacía el carrito. Como el carrito vive
+                        // aquí arriba, Inicio actualiza solo el contador del badge a 0.
+                        carrito = emptyList()
                     }
+                )
+            }
 
-                    // El pedido ya se hizo: se vacía el carrito. Como el carrito vive
-                    // aquí arriba, Inicio actualiza solo el contador del badge a 0.
-                    carrito = emptyList()
-                }
-            )
-        }
-
-        composable(Rutas.CONFIRMACION) {
-            ConfirmacionScreen(
-                // Sigue siendo la opción con la que se confirmó el pedido
-                tipoEntrega = tipoEntrega,
-                onVolverAlInicio = {
-                    // Pila antes:   Inicio → Confirmación
-                    // Pila después: Inicio
-                    // popUpTo(INICIO) saca Confirmación de la pila, y launchSingleTop
-                    // reutiliza el Inicio que ya estaba abajo en vez de crear otro
-                    // encima (si no, "atrás" en Inicio mostraría otro Inicio igual).
-                    navController.navigate(Rutas.INICIO) {
-                        popUpTo(Rutas.INICIO)
-                        launchSingleTop = true
+            composable(Rutas.CONFIRMACION) {
+                ConfirmacionScreen(
+                    // Sigue siendo la opción con la que se confirmó el pedido
+                    tipoEntrega = tipoEntrega,
+                    onVolverAlInicio = {
+                        // Pila antes:   Inicio → Confirmación
+                        // Pila después: Inicio
+                        // popUpTo(INICIO) saca Confirmación de la pila, y launchSingleTop
+                        // reutiliza el Inicio que ya estaba abajo en vez de crear otro
+                        // encima (si no, "atrás" en Inicio mostraría otro Inicio igual).
+                        navController.navigate(Rutas.INICIO) {
+                            popUpTo(Rutas.INICIO)
+                            launchSingleTop = true
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
