@@ -20,6 +20,7 @@ import com.tecsup.mibodega.ui.cliente.screens.confirmacion.ConfirmacionScreen
 import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
 import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
+import com.tecsup.mibodega.ui.cliente.screens.login.LoginScreen
 import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
 
 /**
@@ -45,8 +46,26 @@ fun ClienteApp() {
         composable(Rutas.BIENVENIDA) {
             BienvenidaScreen(
                 onRegistrarse = { navController.navigate(Rutas.REGISTRO) },
-                onIniciarSesion = { /* TODO: pantalla de login, aún no está en el mockup */ },
+                onIniciarSesion = { navController.navigate(Rutas.LOGIN) },
                 onTerminos = { /* TODO: abrir términos y condiciones */ }
+            )
+        }
+
+        composable(Rutas.LOGIN) {
+            LoginScreen(
+                onVolver = { navController.popBackStack() },
+                onIngresar = { telefono ->
+                    // Pila antes:   Bienvenida → Login
+                    // Pila después: Inicio
+                    // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
+                    // ya con la sesión iniciada, "atrás" en Inicio cierra la app en vez
+                    // de volver a la pantalla de ingreso.
+                    navController.navigate(Rutas.INICIO) {
+                        popUpTo(Rutas.BIENVENIDA) { inclusive = true }
+                    }
+                },
+                // Si no tiene cuenta, va al formulario de registro
+                onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
             )
         }
 
