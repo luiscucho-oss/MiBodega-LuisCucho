@@ -26,25 +26,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
 import com.tecsup.mibodega.ui.theme.AzulTexto
-import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 /**
  * Tarjeta de producto usada en el grid de Inicio y en las filas de Categorías.
  * Solo muestra datos y avisa cuando la tocan o cuando tocan "+";
  * no sabe nada de navegación ni del carrito.
+ *
+ * @param colorAcento color del fondo de la imagen y del ícono. Por defecto
+ *        VerdeBodega; Categorías le pasa el color propio de cada categoría.
  */
 @Composable
 fun ProductoCard(
     producto: Producto,
     onClick: () -> Unit,
     onAgregar: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    colorAcento: Color = VerdeBodega
 ) {
     val forma = RoundedCornerShape(18.dp)
 
@@ -72,13 +76,14 @@ fun ProductoCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1.25f)
-                    .background(GrisClaro, RoundedCornerShape(14.dp)),
+                    // El color de acento muy transparente (12 %) como fondo suave
+                    .background(colorAcento.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.ShoppingBasket,
                     contentDescription = producto.nombre,
-                    tint = VerdeBodega,
+                    tint = colorAcento,
                     modifier = Modifier.size(40.dp)
                 )
             }
