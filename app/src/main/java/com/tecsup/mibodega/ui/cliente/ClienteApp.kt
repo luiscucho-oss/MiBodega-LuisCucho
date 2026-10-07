@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +25,7 @@ import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
 import com.tecsup.mibodega.ui.cliente.screens.login.LoginScreen
 import com.tecsup.mibodega.ui.cliente.screens.registro.RegistroScreen
+import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
 
 /**
  * "Director de orquesta" de la app cliente:
@@ -111,7 +113,8 @@ fun ClienteApp() {
                 },
                 onAgregarProducto = { producto ->
                     carrito = agregarOSumarProducto(carrito, producto, 1)
-                }
+                },
+                onNavegar = { pestana -> navController.navegarAPestana(pestana) }
             )
         }
 
@@ -202,6 +205,35 @@ fun ClienteApp() {
                 }
             )
         }
+    }
+}
+
+/**
+ * Navegación de la barra inferior (Inicio, Categorías, Pedidos y Perfil).
+ * Es una función de extensión de NavHostController para escribir solo
+ * navController.navegarAPestana(pestana) desde cada pantalla con barra.
+ *
+ * Las 3 opciones evitan que las pestañas se apilen una sobre otra:
+ * - popUpTo(INICIO) { saveState = true }: antes de abrir la pestaña nueva,
+ *   saca de la pila todo lo que está encima de Inicio, pero GUARDA su estado
+ *   (por ejemplo, hasta dónde bajó el usuario en la lista).
+ * - launchSingleTop = true: si ya se está en esa pestaña, no la abre otra vez.
+ * - restoreState = true: si esa pestaña se visitó antes, recupera su estado guardado.
+ * Así la pila siempre queda Inicio → (pestaña actual), y "atrás" desde
+ * cualquier pestaña vuelve a Inicio.
+ */
+private fun NavHostController.navegarAPestana(pestana: PestanaNavegacion) {
+    // Cada pestaña del enum se traduce a su ruta del NavHost
+    val ruta = when (pestana) {
+        PestanaNavegacion.INICIO -> Rutas.INICIO
+        PestanaNavegacion.CATEGORIAS -> Rutas.CATEGORIAS
+        PestanaNavegacion.PEDIDOS -> Rutas.PEDIDOS
+        PestanaNavegacion.PERFIL -> Rutas.PERFIL
+    }
+    navigate(ruta) {
+        popUpTo(Rutas.INICIO) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 
