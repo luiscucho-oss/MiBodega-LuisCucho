@@ -5,10 +5,11 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Mi Bodega todavía no guarda datos en el teléfono: el carrito, el
+             usuario y los pedidos viven en memoria (en ClienteApp). Por eso no
+             se incluye ni se excluye nada y se usan las reglas por defecto de
+             Android. Si más adelante se usa Room o DataStore, aquí se elige qué
+             archivos respaldar con <include> y <exclude>. -->
     </cloud-backup>
     <!--
     <device-transfer>
