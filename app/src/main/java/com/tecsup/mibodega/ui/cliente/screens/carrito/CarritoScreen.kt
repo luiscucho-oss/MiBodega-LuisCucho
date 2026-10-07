@@ -22,12 +22,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,8 +58,9 @@ const val COSTO_DELIVERY = 4.00
 
 /**
  * Pantalla 5: Mi carrito (mockup "Cliente").
- * No guarda estado propio: el carrito viene de ClienteApp y cualquier
- * cambio (sumar, restar, eliminar) se avisa hacia arriba con callbacks.
+ * El carrito viene de ClienteApp y cualquier cambio (sumar, restar, eliminar)
+ * se avisa hacia arriba con callbacks. Lo único que guarda esta pantalla es
+ * qué producto se está por eliminar, para mostrar el diálogo de confirmación.
  */
 @Composable
 fun CarritoScreen(
@@ -66,6 +73,24 @@ fun CarritoScreen(
 ) {
     val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
     val total = subtotal + COSTO_DELIVERY
+
+    // Producto que se quiere eliminar. Mientras no sea null se muestra el diálogo
+    // de confirmación. Es estado visual que solo usa esta pantalla (como el diálogo
+    // de Términos en BienvenidaScreen), por eso vive aquí y no en ClienteApp.
+    var productoAEliminar by remember { mutableStateOf<Producto?>(null) }
+
+    // let: el diálogo solo se dibuja si hay un producto elegido para eliminar
+    productoAEliminar?.let { producto ->
+        DialogoEliminar(
+            producto = producto,
+            onConfirmar = {
+                // Recién aquí se avisa a ClienteApp que lo saque del carrito
+                onEliminar(producto)
+                productoAEliminar = null
+            },
+            onCancelar = { productoAEliminar = null }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -94,7 +119,8 @@ fun CarritoScreen(
                         item = item,
                         onIncrementar = { onIncrementar(item.producto) },
                         onDecrementar = { onDecrementar(item.producto) },
-                        onEliminar = { onEliminar(item.producto) }
+                        // El tacho no elimina directo: primero pregunta con el diálogo
+                        onEliminar = { productoAEliminar = item.producto }
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
@@ -181,6 +207,35 @@ private fun CarritoVacio(
             onClick = onVerProductos
         )
     }
+}
+
+/**
+ * Pregunta antes de sacar un producto del carrito, para que un toque sin
+ * querer en el tacho no lo borre. Tocar fuera del diálogo equivale a "Cancelar".
+ */
+@Composable
+private fun DialogoEliminar(
+    producto: Producto,
+    onConfirmar: () -> Unit,
+    onCancelar: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+        title = { Text("Eliminar producto") },
+        text = { Text("¿Quieres quitar ${producto.nombre} de tu carrito?") },
+        confirmButton = {
+            TextButton(onClick = onConfirmar) {
+                // Rojo (color error del tema) porque es una acción que borra algo
+                Text("Eliminar", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) {
+                Text("Cancelar", color = VerdeBodega)
+            }
+        }
+    )
 }
 
 @Composable
