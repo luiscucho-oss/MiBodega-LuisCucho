@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +24,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -29,12 +34,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.CampoTexto
 import com.tecsup.mibodega.ui.theme.BodegaTheme
@@ -48,17 +56,21 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * desde ClienteApp y los botones solo avisan hacia arriba (state hoisting).
  *
  * @param subtotal suma de (precio x cantidad) de todo el carrito
- * @param delivery costo fijo del delivery
- * @param total subtotal + delivery
+ * @param tipoEntrega opción marcada con los RadioButton (delivery o recojo)
+ * @param total subtotal + tipoEntrega.costo (lo calcula ClienteApp)
+ * @param onTipoEntregaCambia avisa qué opción se tocó; ClienteApp la guarda y
+ *        vuelve a calcular el total
  * @param onConfirmarPedido recibe los datos ya validados (ningún campo vacío).
  *        Si falta algún campo no se llama: el campo vacío se marca en rojo.
+ *        Con recojo en tienda, dirección y referencia llegan vacías.
  */
 @OptIn(ExperimentalMaterial3Api::class) // TopAppBar todavía es experimental en Material 3
 @Composable
 fun DatosEntregaScreen(
     subtotal: Double,
-    delivery: Double,
+    tipoEntrega: TipoEntrega,
     total: Double,
+    onTipoEntregaCambia: (TipoEntrega) -> Unit,
     onVolver: () -> Unit,
     onConfirmarPedido: (nombre: String, telefono: String, direccion: String, referencia: String) -> Unit
 ) {
@@ -70,10 +82,19 @@ fun DatosEntregaScreen(
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
 
-    // El pedido solo se confirma si los 4 campos tienen texto. Se usa isNotBlank()
-    // (y no isNotEmpty()) para que un campo con solo espacios cuente como vacío.
-    // Como se calcula en cada recomposición, se actualiza solo al escribir.
-    val camposCompletos = listOf(nombre, telefono, direccion, referencia).all { it.isNotBlank() }
+    // Con recojo en tienda no hace falta dirección ni referencia: esos campos se
+    // ocultan y solo se piden nombre y teléfono (para avisarle que ya está listo)
+    val esDelivery = tipoEntrega == TipoEntrega.DELIVERY
+    val camposObligatorios = if (esDelivery) {
+        listOf(nombre, telefono, direccion, referencia)
+    } else {
+        listOf(nombre, telefono)
+    }
+
+    // El pedido solo se confirma si los campos obligatorios tienen texto. Se usa
+    // isNotBlank() (y no isNotEmpty()) para que un campo con solo espacios cuente
+    // como vacío. Como se calcula en cada recomposición, se actualiza solo al escribir.
+    val camposCompletos = camposObligatorios.all { it.isNotBlank() }
 
     // Pasa a true la primera vez que se toca "Confirmar pedido". Desde ahí los
     // campos vacíos se ven en rojo hasta que el usuario escriba en ellos.
@@ -109,13 +130,21 @@ fun DatosEntregaScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Text(
-                text = "¿A dónde llevamos tu pedido?",
+                text = "¿Cómo quieres recibir tu pedido?",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
             )
 
+            SelectorTipoEntrega(
+                seleccionado = tipoEntrega,
+                onSeleccionar = onTipoEntregaCambia
+            )
+
+            Spacer(Modifier.height(20.dp))
+
             FormularioEntrega(
+                pedirDireccion = esDelivery,
                 nombre = nombre,
                 onNombreCambia = { nombre = it },
                 telefono = telefono,
@@ -129,7 +158,7 @@ fun DatosEntregaScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            ResumenPedido(subtotal = subtotal, delivery = delivery, total = total)
+            ResumenPedido(subtotal = subtotal, tipoEntrega = tipoEntrega, total = total)
 
             Spacer(Modifier.height(24.dp))
 
@@ -137,8 +166,14 @@ fun DatosEntregaScreen(
                 texto = "Confirmar pedido",
                 onClick = {
                     if (camposCompletos) {
-                        // trim(): se envían los datos sin espacios sobrantes al inicio o al final
-                        onConfirmarPedido(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim())
+                        // trim(): se envían los datos sin espacios sobrantes al inicio o al final.
+                        // Con recojo, la dirección no se usa aunque se haya escrito antes.
+                        onConfirmarPedido(
+                            nombre.trim(),
+                            telefono.trim(),
+                            if (esDelivery) direccion.trim() else "",
+                            if (esDelivery) referencia.trim() else ""
+                        )
                     } else {
                         // No se avanza: solo se marcan en rojo los campos vacíos
                         intentoConfirmar = true
@@ -168,15 +203,76 @@ fun DatosEntregaScreen(
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
 
 /**
- * Los 4 campos del formulario. No guarda estado propio: recibe cada valor
+ * Las dos opciones de entrega con RadioButton. Solo una puede estar marcada:
+ * la que llega en "seleccionado". Al tocar otra, se avisa hacia arriba.
+ */
+@Composable
+private fun SelectorTipoEntrega(
+    seleccionado: TipoEntrega,
+    onSeleccionar: (TipoEntrega) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(GrisClaro, RoundedCornerShape(12.dp))
+            .padding(vertical = 4.dp)
+            // selectableGroup: el lector de pantalla anuncia las opciones como un
+            // solo grupo de RadioButton ("1 de 2", "2 de 2")
+            .selectableGroup()
+    ) {
+        // entries = las opciones del enum, en el orden en que se declararon
+        TipoEntrega.entries.forEach { tipo ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Toda la fila se puede tocar, no solo el circulito
+                    .selectable(
+                        selected = tipo == seleccionado,
+                        onClick = { onSeleccionar(tipo) },
+                        role = Role.RadioButton
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = tipo == seleccionado,
+                    // null: el toque ya lo maneja la fila completa (selectable)
+                    onClick = null,
+                    colors = RadioButtonDefaults.colors(selectedColor = VerdeBodega)
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = tipo.etiqueta, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = tipo.descripcion,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = if (tipo.costo == 0.0) "Gratis" else "S/ %.2f".format(tipo.costo),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = VerdeBodega
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Los campos del formulario. No guarda estado propio: recibe cada valor
  * y avisa cada cambio hacia arriba, así DatosEntregaScreen sigue siendo
  * la única dueña de los textos.
  *
+ * @param pedirDireccion false con recojo en tienda: dirección y referencia
+ *        no se muestran porque no hacen falta
  * @param mostrarErrores true después de tocar "Confirmar pedido": desde ahí
  *        cada campo vacío se marca en rojo
  */
 @Composable
 private fun FormularioEntrega(
+    pedirDireccion: Boolean,
     nombre: String,
     onNombreCambia: (String) -> Unit,
     telefono: String,
@@ -206,24 +302,28 @@ private fun FormularioEntrega(
             // Teclado numérico de teléfono en lugar del teclado de letras
             teclado = KeyboardType.Phone
         )
-        Spacer(Modifier.height(16.dp))
 
-        CampoTexto(
-            etiqueta = "Dirección de entrega",
-            valor = direccion,
-            onValorCambia = onDireccionCambia,
-            esError = mostrarErrores && direccion.isBlank(),
-            placeholder = "Av. Los Olivos 123"
-        )
-        Spacer(Modifier.height(16.dp))
+        // Solo con delivery: para recoger en la bodega no se necesita dirección
+        if (pedirDireccion) {
+            Spacer(Modifier.height(16.dp))
 
-        CampoTexto(
-            etiqueta = "Referencia",
-            valor = referencia,
-            onValorCambia = onReferenciaCambia,
-            esError = mostrarErrores && referencia.isBlank(),
-            placeholder = "Frente al parque"
-        )
+            CampoTexto(
+                etiqueta = "Dirección de entrega",
+                valor = direccion,
+                onValorCambia = onDireccionCambia,
+                esError = mostrarErrores && direccion.isBlank(),
+                placeholder = "Av. Los Olivos 123"
+            )
+            Spacer(Modifier.height(16.dp))
+
+            CampoTexto(
+                etiqueta = "Referencia",
+                valor = referencia,
+                onValorCambia = onReferenciaCambia,
+                esError = mostrarErrores && referencia.isBlank(),
+                placeholder = "Frente al parque"
+            )
+        }
     }
 }
 
@@ -232,7 +332,7 @@ private fun FormularioEntrega(
  * recibe; no calcula nada (los cálculos los hace ClienteApp).
  */
 @Composable
-private fun ResumenPedido(subtotal: Double, delivery: Double, total: Double) {
+private fun ResumenPedido(subtotal: Double, tipoEntrega: TipoEntrega, total: Double) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -248,7 +348,9 @@ private fun ResumenPedido(subtotal: Double, delivery: Double, total: Double) {
         Spacer(Modifier.height(8.dp))
 
         FilaResumen(etiqueta = "Subtotal", valor = subtotal)
-        FilaResumen(etiqueta = "Costo de delivery", valor = delivery)
+        // "Delivery S/ 4.00" o "Recojo en tienda S/ 0.00": por eso el total cambia
+        // apenas se marca otra opción
+        FilaResumen(etiqueta = tipoEntrega.etiqueta, valor = tipoEntrega.costo)
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -289,8 +391,9 @@ private fun DatosEntregaPreview() {
         // Montos de ejemplo: 2 Arroz Costeño (9.00) + 1 Coca-Cola (6.50) = 15.50
         DatosEntregaScreen(
             subtotal = 15.50,
-            delivery = 4.00,
+            tipoEntrega = TipoEntrega.DELIVERY,
             total = 19.50,
+            onTipoEntregaCambia = {},
             onVolver = {},
             onConfirmarPedido = { _, _, _, _ -> }
         )

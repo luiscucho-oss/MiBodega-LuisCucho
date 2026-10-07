@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
+import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
 import com.tecsup.mibodega.ui.componentes.SelectorCantidad
@@ -52,19 +53,19 @@ import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
-// Público (sin "private") para que ClienteApp use el mismo valor al armar
-// el resumen de DatosEntregaScreen: así el costo se cambia en un solo lugar.
-const val COSTO_DELIVERY = 4.00
-
 /**
  * Pantalla 5: Mi carrito (mockup "Cliente").
  * El carrito viene de ClienteApp y cualquier cambio (sumar, restar, eliminar)
  * se avisa hacia arriba con callbacks. Lo único que guarda esta pantalla es
  * qué producto se está por eliminar, para mostrar el diálogo de confirmación.
+ *
+ * @param tipoEntrega lo elegido en Datos de entrega (delivery por defecto): de
+ *        eso depende el costo de envío que se suma al total
  */
 @Composable
 fun CarritoScreen(
     carrito: List<ItemCarrito>,
+    tipoEntrega: TipoEntrega,
     onVolver: () -> Unit,
     onIncrementar: (Producto) -> Unit,
     onDecrementar: (Producto) -> Unit,
@@ -72,7 +73,7 @@ fun CarritoScreen(
     onContinuarPedido: () -> Unit
 ) {
     val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
-    val total = subtotal + COSTO_DELIVERY
+    val total = subtotal + tipoEntrega.costo
 
     // Producto que se quiere eliminar. Mientras no sea null se muestra el diálogo
     // de confirmación. Es estado visual que solo usa esta pantalla (como el diálogo
@@ -128,7 +129,7 @@ fun CarritoScreen(
 
             ResumenYBoton(
                 subtotal = subtotal,
-                delivery = COSTO_DELIVERY,
+                tipoEntrega = tipoEntrega,
                 total = total,
                 onContinuarPedido = onContinuarPedido
             )
@@ -294,13 +295,14 @@ private fun FilaCarrito(
 @Composable
 private fun ResumenYBoton(
     subtotal: Double,
-    delivery: Double,
+    tipoEntrega: TipoEntrega,
     total: Double,
     onContinuarPedido: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
         FilaResumen(etiqueta = "Subtotal", valor = subtotal)
-        FilaResumen(etiqueta = "Costo de delivery", valor = delivery)
+        // "Delivery S/ 4.00" o "Recojo en tienda S/ 0.00"
+        FilaResumen(etiqueta = tipoEntrega.etiqueta, valor = tipoEntrega.costo)
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -352,6 +354,7 @@ private fun CarritoPreview() {
     BodegaTheme {
         CarritoScreen(
             carrito = carritoEjemplo,
+            tipoEntrega = TipoEntrega.DELIVERY,
             onVolver = {},
             onIncrementar = {},
             onDecrementar = {},
@@ -367,6 +370,7 @@ private fun CarritoVacioPreview() {
     BodegaTheme {
         CarritoScreen(
             carrito = emptyList(),
+            tipoEntrega = TipoEntrega.DELIVERY,
             onVolver = {},
             onIncrementar = {},
             onDecrementar = {},

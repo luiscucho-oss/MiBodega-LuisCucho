@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Pedido
+import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.componentes.BarraNavegacion
 import com.tecsup.mibodega.ui.componentes.PestanaNavegacion
@@ -89,7 +90,7 @@ fun PedidosScreen(
 
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
 
-/** Número y total arriba; debajo, los productos y la dirección de entrega. */
+/** Número y total arriba; debajo, los productos y cómo se entrega. */
 @Composable
 private fun FilaPedido(pedido: Pedido) {
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
@@ -116,7 +117,10 @@ private fun FilaPedido(pedido: Pedido) {
             style = MaterialTheme.typography.bodyMedium
         )
         Text(
-            text = "Entrega en: ${pedido.direccion}",
+            text = when (pedido.tipoEntrega) {
+                TipoEntrega.DELIVERY -> "Entrega en: ${pedido.direccion}"
+                TipoEntrega.RECOJO_EN_TIENDA -> "Recojo en tienda"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -133,6 +137,7 @@ private fun PedidosPreview() {
                     numero = 1,
                     productos = listOf(ItemCarrito(listaProductosFake[0], 2)),
                     total = 13.00,
+                    tipoEntrega = TipoEntrega.DELIVERY,
                     direccion = "Av. Los Olivos 123"
                 )
             ),

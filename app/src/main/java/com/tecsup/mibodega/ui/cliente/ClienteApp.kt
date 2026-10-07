@@ -15,12 +15,12 @@ import androidx.navigation.navArgument
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Pedido
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
+import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.cliente.modelo.Usuario
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.cliente.modelo.usuarioDeEjemplo
 import com.tecsup.mibodega.ui.cliente.screens.bienvenida.BienvenidaScreen
 import com.tecsup.mibodega.ui.cliente.screens.categorias.CategoriasScreen
-import com.tecsup.mibodega.ui.cliente.screens.carrito.COSTO_DELIVERY
 import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
 import com.tecsup.mibodega.ui.cliente.screens.confirmacion.ConfirmacionScreen
 import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
@@ -72,6 +72,11 @@ fun ClienteApp() {
     val alternarFavorito: (Producto) -> Unit = { producto ->
         favoritos = if (producto.id in favoritos) favoritos - producto.id else favoritos + producto.id
     }
+
+    // Delivery o recojo en tienda (RadioButton de Datos de entrega). Vive aquí
+    // porque de esto depende el total que muestran Carrito y Datos de entrega,
+    // y porque el pedido lo guarda al confirmarse.
+    var tipoEntrega by remember { mutableStateOf(TipoEntrega.DELIVERY) }
 
     // Pedidos confirmados. mutableStateListOf es una lista "observable":
     // al hacer add(), Compose redibuja solo las pantallas que la leen (Pedidos).
@@ -207,6 +212,7 @@ fun ClienteApp() {
                     // y ya no hay nadie con la sesión iniciada (las cuentas sí se conservan)
                     carrito = emptyList()
                     favoritos = emptySet()
+                    tipoEntrega = TipoEntrega.DELIVERY
                     usuario = null
 
                     // popUpTo(graph.id) inclusive saca TODAS las pantallas de la pila
@@ -258,6 +264,7 @@ fun ClienteApp() {
         composable(Rutas.CARRITO) {
             CarritoScreen(
                 carrito = carrito,
+                tipoEntrega = tipoEntrega,
                 onVolver = { navController.popBackStack() },
                 onIncrementar = { producto ->
                     carrito = carrito.map {
@@ -283,13 +290,16 @@ fun ClienteApp() {
         composable(Rutas.ENTREGA) {
             // Los montos se calculan aquí a partir del carrito, con la misma fórmula
             // que CarritoScreen. DatosEntregaScreen solo los recibe y los muestra.
+            // Como tipoEntrega es estado, al marcar otro RadioButton este bloque se
+            // vuelve a ejecutar y el total se recalcula solo (S/ 4.00 o S/ 0.00 de envío).
             val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
-            val total = subtotal + COSTO_DELIVERY
+            val total = subtotal + tipoEntrega.costo
 
             DatosEntregaScreen(
                 subtotal = subtotal,
-                delivery = COSTO_DELIVERY,
+                tipoEntrega = tipoEntrega,
                 total = total,
+                onTipoEntregaCambia = { tipoEntrega = it },
                 onVolver = { navController.popBackStack() },
                 onConfirmarPedido = { nombre, telefono, direccion, referencia ->
                     // Por ahora los pedidos viven en memoria, en la lista "pedidos"
@@ -300,6 +310,7 @@ fun ClienteApp() {
                             numero = pedidos.size + 1,
                             productos = carrito,
                             total = total,
+                            tipoEntrega = tipoEntrega,
                             direccion = direccion
                         )
                     )
@@ -322,6 +333,8 @@ fun ClienteApp() {
 
         composable(Rutas.CONFIRMACION) {
             ConfirmacionScreen(
+                // Sigue siendo la opción con la que se confirmó el pedido
+                tipoEntrega = tipoEntrega,
                 onVolverAlInicio = {
                     // Pila antes:   Inicio → Confirmación
                     // Pila después: Inicio

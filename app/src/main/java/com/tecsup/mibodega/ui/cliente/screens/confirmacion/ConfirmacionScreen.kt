@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tecsup.mibodega.ui.cliente.modelo.TipoEntrega
 import com.tecsup.mibodega.ui.componentes.BotonSecundario
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
@@ -31,9 +32,13 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * Es la última pantalla del flujo de compra. No tiene estado propio:
  * solo muestra el mensaje de éxito y avisa hacia arriba (onVolverAlInicio)
  * cuando el usuario quiere seguir comprando. ClienteApp decide cómo navegar.
+ *
+ * @param tipoEntrega cambia el mensaje: con delivery se lo llevan, con recojo
+ *        lo recoge en la bodega
  */
 @Composable
 fun ConfirmacionScreen(
+    tipoEntrega: TipoEntrega,
     onVolverAlInicio: () -> Unit
 ) {
     Column(
@@ -61,8 +66,12 @@ fun ConfirmacionScreen(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Gracias por tu compra. Estamos preparando tu pedido " +
-                    "y te lo llevaremos a la dirección que indicaste.",
+            text = when (tipoEntrega) {
+                TipoEntrega.DELIVERY -> "Gracias por tu compra. Estamos preparando tu pedido " +
+                        "y te lo llevaremos a la dirección que indicaste."
+                TipoEntrega.RECOJO_EN_TIENDA -> "Gracias por tu compra. Estamos preparando tu pedido: " +
+                        "puedes recogerlo en la bodega en unos minutos."
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -102,6 +111,6 @@ private fun IconoExito() {
 @Composable
 private fun ConfirmacionPreview() {
     BodegaTheme {
-        ConfirmacionScreen(onVolverAlInicio = {})
+        ConfirmacionScreen(tipoEntrega = TipoEntrega.DELIVERY, onVolverAlInicio = {})
     }
 }
