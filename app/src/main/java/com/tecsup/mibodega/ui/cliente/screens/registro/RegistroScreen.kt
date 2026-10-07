@@ -54,9 +54,14 @@ fun RegistroScreen(
     var referencia by remember { mutableStateOf("") }
 
     // Como estos datos se guardan en ClienteApp y se muestran en Perfil,
-    // "Crear cuenta" solo se activa si los 4 campos tienen texto
+    // no se puede crear la cuenta con algún campo vacío
     // (isNotBlank: un campo con solo espacios cuenta como vacío)
     val camposCompletos = listOf(nombre, telefono, direccion, referencia).all { it.isNotBlank() }
+
+    // Pasa a true la primera vez que se toca "Crear cuenta". Desde ahí, cada campo
+    // vacío se marca en rojo; al escribir en él, el rojo se quita solo porque
+    // esError se vuelve a calcular en cada recomposición.
+    var intentoCrear by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -90,6 +95,7 @@ fun RegistroScreen(
             etiqueta = "Nombre completo",
             valor = nombre,
             onValorCambia = { nombre = it },
+            esError = intentoCrear && nombre.isBlank(),
             placeholder = "Juan Pérez"
         )
         Spacer(Modifier.height(16.dp))
@@ -98,6 +104,7 @@ fun RegistroScreen(
             etiqueta = "Teléfono",
             valor = telefono,
             onValorCambia = { telefono = it },
+            esError = intentoCrear && telefono.isBlank(),
             placeholder = "987 654 321",
             teclado = KeyboardType.Phone
         )
@@ -107,6 +114,7 @@ fun RegistroScreen(
             etiqueta = "Dirección de entrega",
             valor = direccion,
             onValorCambia = { direccion = it },
+            esError = intentoCrear && direccion.isBlank(),
             placeholder = "Av. Los Olivos 123"
         )
         Spacer(Modifier.height(16.dp))
@@ -115,6 +123,7 @@ fun RegistroScreen(
             etiqueta = "Referencia",
             valor = referencia,
             onValorCambia = { referencia = it },
+            esError = intentoCrear && referencia.isBlank(),
             placeholder = "Frente al parque"
         )
 
@@ -122,9 +131,15 @@ fun RegistroScreen(
 
         BotonPrimario(
             texto = "Crear cuenta",
-            // trim(): se envían los datos sin espacios sobrantes al inicio o al final
-            onClick = { onCrearCuenta(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim()) },
-            habilitado = camposCompletos
+            onClick = {
+                if (camposCompletos) {
+                    // trim(): se envían los datos sin espacios sobrantes al inicio o al final
+                    onCrearCuenta(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim())
+                } else {
+                    // No se avanza: solo se marcan en rojo los campos vacíos
+                    intentoCrear = true
+                }
+            }
         )
 
         Spacer(Modifier.height(24.dp))

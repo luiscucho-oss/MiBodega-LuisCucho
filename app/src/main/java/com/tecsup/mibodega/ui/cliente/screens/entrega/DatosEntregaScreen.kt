@@ -50,7 +50,8 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * @param subtotal suma de (precio x cantidad) de todo el carrito
  * @param delivery costo fijo del delivery
  * @param total subtotal + delivery
- * @param onConfirmarPedido recibe los datos ya validados (ningún campo vacío)
+ * @param onConfirmarPedido recibe los datos ya validados (ningún campo vacío).
+ *        Si falta algún campo no se llama: el campo vacío se marca en rojo.
  */
 @OptIn(ExperimentalMaterial3Api::class) // TopAppBar todavía es experimental en Material 3
 @Composable
@@ -69,10 +70,14 @@ fun DatosEntregaScreen(
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
 
-    // El botón solo se activa si los 4 campos tienen texto. Se usa isNotBlank()
+    // El pedido solo se confirma si los 4 campos tienen texto. Se usa isNotBlank()
     // (y no isNotEmpty()) para que un campo con solo espacios cuente como vacío.
     // Como se calcula en cada recomposición, se actualiza solo al escribir.
     val camposCompletos = listOf(nombre, telefono, direccion, referencia).all { it.isNotBlank() }
+
+    // Pasa a true la primera vez que se toca "Confirmar pedido". Desde ahí los
+    // campos vacíos se ven en rojo hasta que el usuario escriba en ellos.
+    var intentoConfirmar by remember { mutableStateOf(false) }
 
     Scaffold(
         // safeDrawing incluye las barras del sistema y también el teclado:
@@ -118,7 +123,8 @@ fun DatosEntregaScreen(
                 direccion = direccion,
                 onDireccionCambia = { direccion = it },
                 referencia = referencia,
-                onReferenciaCambia = { referencia = it }
+                onReferenciaCambia = { referencia = it },
+                mostrarErrores = intentoConfirmar
             )
 
             Spacer(Modifier.height(24.dp))
@@ -129,20 +135,24 @@ fun DatosEntregaScreen(
 
             BotonPrimario(
                 texto = "Confirmar pedido",
-                // trim(): se envían los datos sin espacios sobrantes al inicio o al final
                 onClick = {
-                    onConfirmarPedido(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim())
-                },
-                habilitado = camposCompletos
+                    if (camposCompletos) {
+                        // trim(): se envían los datos sin espacios sobrantes al inicio o al final
+                        onConfirmarPedido(nombre.trim(), telefono.trim(), direccion.trim(), referencia.trim())
+                    } else {
+                        // No se avanza: solo se marcan en rojo los campos vacíos
+                        intentoConfirmar = true
+                    }
+                }
             )
 
-            // Mensaje de ayuda mientras el botón está desactivado, para que el
-            // usuario sepa por qué no puede confirmar todavía
-            if (!camposCompletos) {
+            // Mensaje junto al botón para que el usuario sepa por qué no avanzó,
+            // aunque el campo vacío haya quedado más arriba (fuera de la pantalla)
+            if (intentoConfirmar && !camposCompletos) {
                 Text(
-                    text = "Completa todos los campos para confirmar tu pedido",
+                    text = "Completa los campos marcados en rojo",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -161,6 +171,9 @@ fun DatosEntregaScreen(
  * Los 4 campos del formulario. No guarda estado propio: recibe cada valor
  * y avisa cada cambio hacia arriba, así DatosEntregaScreen sigue siendo
  * la única dueña de los textos.
+ *
+ * @param mostrarErrores true después de tocar "Confirmar pedido": desde ahí
+ *        cada campo vacío se marca en rojo
  */
 @Composable
 private fun FormularioEntrega(
@@ -171,13 +184,15 @@ private fun FormularioEntrega(
     direccion: String,
     onDireccionCambia: (String) -> Unit,
     referencia: String,
-    onReferenciaCambia: (String) -> Unit
+    onReferenciaCambia: (String) -> Unit,
+    mostrarErrores: Boolean
 ) {
     Column {
         CampoTexto(
             etiqueta = "Nombre completo",
             valor = nombre,
             onValorCambia = onNombreCambia,
+            esError = mostrarErrores && nombre.isBlank(),
             placeholder = "Juan Pérez"
         )
         Spacer(Modifier.height(16.dp))
@@ -186,6 +201,7 @@ private fun FormularioEntrega(
             etiqueta = "Teléfono",
             valor = telefono,
             onValorCambia = onTelefonoCambia,
+            esError = mostrarErrores && telefono.isBlank(),
             placeholder = "987 654 321",
             // Teclado numérico de teléfono en lugar del teclado de letras
             teclado = KeyboardType.Phone
@@ -196,6 +212,7 @@ private fun FormularioEntrega(
             etiqueta = "Dirección de entrega",
             valor = direccion,
             onValorCambia = onDireccionCambia,
+            esError = mostrarErrores && direccion.isBlank(),
             placeholder = "Av. Los Olivos 123"
         )
         Spacer(Modifier.height(16.dp))
@@ -204,6 +221,7 @@ private fun FormularioEntrega(
             etiqueta = "Referencia",
             valor = referencia,
             onValorCambia = onReferenciaCambia,
+            esError = mostrarErrores && referencia.isBlank(),
             placeholder = "Frente al parque"
         )
     }
