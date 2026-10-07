@@ -12,7 +12,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
 import com.tecsup.mibodega.ui.cliente.modelo.Producto
+import com.tecsup.mibodega.ui.cliente.modelo.Usuario
 import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
+import com.tecsup.mibodega.ui.cliente.modelo.usuarioDeEjemplo
 import com.tecsup.mibodega.ui.cliente.screens.bienvenida.BienvenidaScreen
 import com.tecsup.mibodega.ui.cliente.screens.carrito.COSTO_DELIVERY
 import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
@@ -39,6 +41,10 @@ fun ClienteApp() {
     // El carrito vive aquí arriba, no en ninguna Screen.
     var carrito by remember { mutableStateOf<List<ItemCarrito>>(emptyList()) }
 
+    // Datos del usuario que entró a la app. Se llenan en Registro o en Login.
+    // null = todavía nadie ha entrado (se está en Bienvenida).
+    var usuario by remember { mutableStateOf<Usuario?>(null) }
+
     NavHost(
         navController = navController,
         startDestination = Rutas.BIENVENIDA
@@ -46,8 +52,9 @@ fun ClienteApp() {
         composable(Rutas.BIENVENIDA) {
             BienvenidaScreen(
                 onRegistrarse = { navController.navigate(Rutas.REGISTRO) },
-                onIniciarSesion = { navController.navigate(Rutas.LOGIN) },
-                onTerminos = { /* TODO: abrir términos y condiciones */ }
+                onIniciarSesion = { navController.navigate(Rutas.LOGIN) }
+                // Términos y condiciones: el diálogo lo abre y lo cierra la misma
+                // BienvenidaScreen, porque es estado visual que solo ella usa.
             )
         }
 
@@ -55,6 +62,13 @@ fun ClienteApp() {
             LoginScreen(
                 onVolver = { navController.popBackStack() },
                 onIngresar = { telefono ->
+                    // Si ya se registró en esta sesión con ese mismo teléfono, se
+                    // conservan sus datos. Si no, se usan los datos de ejemplo
+                    // (con el teléfono que escribió), porque todavía no hay una
+                    // base de datos de donde leer sus datos reales.
+                    usuario = usuario?.takeIf { it.telefono == telefono }
+                        ?: usuarioDeEjemplo.copy(telefono = telefono)
+
                     // Pila antes:   Bienvenida → Login
                     // Pila después: Inicio
                     // popUpTo(BIENVENIDA) inclusive saca Bienvenida y Login de la pila:
@@ -73,7 +87,14 @@ fun ClienteApp() {
             RegistroScreen(
                 onVolver = { navController.popBackStack() },
                 onCrearCuenta = { nombre, telefono, direccion, referencia ->
-                    // TODO: guardar estos datos cuando exista el registro real
+                    // Se guardan los datos del registro aquí arriba para que otras
+                    // pantallas (como Perfil) puedan mostrarlos
+                    usuario = Usuario(
+                        nombre = nombre,
+                        telefono = telefono,
+                        direccion = direccion,
+                        referencia = referencia
+                    )
                     navController.navigate(Rutas.INICIO) {
                         popUpTo(Rutas.BIENVENIDA) { inclusive = true }
                     }
