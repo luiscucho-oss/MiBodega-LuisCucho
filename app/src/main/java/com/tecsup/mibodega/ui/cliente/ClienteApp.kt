@@ -16,6 +16,7 @@ import com.tecsup.mibodega.ui.cliente.modelo.listaProductosFake
 import com.tecsup.mibodega.ui.cliente.screens.bienvenida.BienvenidaScreen
 import com.tecsup.mibodega.ui.cliente.screens.carrito.COSTO_DELIVERY
 import com.tecsup.mibodega.ui.cliente.screens.carrito.CarritoScreen
+import com.tecsup.mibodega.ui.cliente.screens.confirmacion.ConfirmacionScreen
 import com.tecsup.mibodega.ui.cliente.screens.detalle.DetalleProductoScreen
 import com.tecsup.mibodega.ui.cliente.screens.entrega.DatosEntregaScreen
 import com.tecsup.mibodega.ui.cliente.screens.inicio.InicioScreen
@@ -148,7 +149,36 @@ fun ClienteApp() {
                 total = total,
                 onVolver = { navController.popBackStack() },
                 onConfirmarPedido = { nombre, telefono, direccion, referencia ->
-                    // TODO: vaciar el carrito y navegar a la pantalla de confirmación
+                    // TODO: enviar el pedido con estos datos cuando exista un backend
+
+                    // Pila antes:   Inicio → Carrito → Entrega
+                    // Pila después: Inicio → Confirmación
+                    // popUpTo(INICIO) saca todo lo que está ENCIMA de Inicio (Carrito y
+                    // Entrega) antes de abrir Confirmación. Así, al presionar "atrás" en
+                    // Confirmación se vuelve a Inicio y no a un carrito ya pagado.
+                    navController.navigate(Rutas.CONFIRMACION) {
+                        popUpTo(Rutas.INICIO)
+                    }
+
+                    // El pedido ya se hizo: se vacía el carrito. Como el carrito vive
+                    // aquí arriba, Inicio actualiza solo el contador del badge a 0.
+                    carrito = emptyList()
+                }
+            )
+        }
+
+        composable(Rutas.CONFIRMACION) {
+            ConfirmacionScreen(
+                onVolverAlInicio = {
+                    // Pila antes:   Inicio → Confirmación
+                    // Pila después: Inicio
+                    // popUpTo(INICIO) saca Confirmación de la pila, y launchSingleTop
+                    // reutiliza el Inicio que ya estaba abajo en vez de crear otro
+                    // encima (si no, "atrás" en Inicio mostraría otro Inicio igual).
+                    navController.navigate(Rutas.INICIO) {
+                        popUpTo(Rutas.INICIO)
+                        launchSingleTop = true
+                    }
                 }
             )
         }
