@@ -32,9 +32,10 @@ Mi Bodega es una app Android para comprar en una bodega de barrio y pedir delive
 flowchart LR
     BI[Bienvenida] --> LO[Iniciar sesión]
     BI --> RE[Registro]
-    LO --> IN[Inicio]
-    RE --> IN
+    RE -- cuenta creada --> LO
+    LO -- datos correctos --> IN[Inicio]
     IN -- productoId --> DE[Detalle]
+    IN --> FA[Mis favoritos]
     DE -- agregar al carrito --> IN
     IN --> CA[Carrito]
     CA --> EN[Datos de entrega]
@@ -57,7 +58,7 @@ app/src/main/java/com/tecsup/mibodega/
     ├── cliente/
     │   ├── ClienteApp.kt        NavHost y estado de la app (carrito, usuario y pedidos)
     │   ├── Rutas.kt             Rutas de navegación
-    │   ├── modelo/              Producto, ItemCarrito, Pedido, Usuario y DatosFake
+    │   ├── modelo/              Producto, ItemCarrito, Pedido, TipoEntrega, Usuario y DatosFake
     │   └── screens/
     │       ├── bienvenida/      BienvenidaScreen.kt
     │       ├── login/           LoginScreen.kt
@@ -65,6 +66,7 @@ app/src/main/java/com/tecsup/mibodega/
     │       ├── inicio/          InicioScreen.kt
     │       ├── categorias/      CategoriasScreen.kt
     │       ├── detalle/         DetalleProductoScreen.kt
+    │       ├── favoritos/       FavoritosScreen.kt
     │       ├── carrito/         CarritoScreen.kt
     │       ├── entrega/         DatosEntregaScreen.kt
     │       ├── confirmacion/    ConfirmacionScreen.kt
@@ -131,7 +133,7 @@ Las tarjetas, el detalle y el carrito muestran la foto real de cada producto.
    ```
 2. En Android Studio abre la carpeta que contiene `settings.gradle.kts`.
 3. Elige la rama (`git checkout main` o `git checkout mejora-ia`) y presiona **Run**. Cada vez que cambies de rama, vuelve a presionar **Run** para reinstalar la app.
-4. Para probar sin registrarte, en **Iniciar sesión** escribe cualquier teléfono y contraseña: la app usa datos de ejemplo.
+4. Para probar sin registrarte, en **Iniciar sesión** usa la cuenta fija del código: teléfono **987654321** y contraseña **123456**. También puedes crear una cuenta en **Registrarme**: al terminar, la app te lleva a Iniciar sesión para entrar con ese teléfono y esa contraseña.
 
 > Gradle 8.13 funciona con JDK 17 a 23. Si Android Studio usa JDK 25, cambia el Gradle JDK a la versión 21.
 
@@ -159,7 +161,7 @@ El `NavigationDrawer` es un menú lateral que se abre con un botón o deslizando
 
 ## Observaciones
 
-1. El carrito, el usuario y los pedidos viven en memoria (en `ClienteApp`): al cerrar la app se pierden, y quien entra por "Iniciar sesión" sin haberse registrado ve datos de ejemplo. Para una app real haría falta guardarlos con Room o DataStore, o en un servidor.
+1. El carrito, las cuentas, los favoritos y los pedidos viven en memoria (en `ClienteApp`): al cerrar la app se pierden, y solo queda la cuenta fija del código (987654321 / 123456). El modo oscuro tampoco se guarda al cerrar la app. Para una app real haría falta guardarlos con Room o DataStore, o en un servidor, y no guardar las contraseñas en texto plano.
 2. El proyecto usaba Gradle 8.13, que no funciona con el JDK 25 que trae Android Studio. Se actualizó el Gradle Wrapper a 9.4.1, que sí lo soporta, así que el proyecto sincroniza y compila al clonarlo sin cambiar el Gradle JDK.
 3. Las fotos de los productos están en `res/drawable` (`producto_*.jpg`) y se obtuvieron de [Open Food Facts](https://world.openfoodfacts.org), una base de datos abierta de productos. Cada `Producto` guarda su foto en el campo `imagen`, y al estar dentro de la app se ven sin conexión a internet.
 
