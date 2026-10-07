@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.cliente.modelo.ItemCarrito
@@ -71,29 +74,39 @@ fun CarritoScreen(
     ) {
         EncabezadoCarrito(onVolver = onVolver)
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(carrito, key = { it.producto.id }) { item ->
-                FilaCarrito(
-                    item = item,
-                    onIncrementar = { onIncrementar(item.producto) },
-                    onDecrementar = { onDecrementar(item.producto) },
-                    onEliminar = { onEliminar(item.producto) }
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        if (carrito.isEmpty()) {
+            // Sin productos no hay nada que resumir ni que pedir: en lugar de la
+            // lista, el resumen y "Continuar pedido" se muestra un mensaje.
+            // weight(1f) le da todo el alto libre para poder centrarlo.
+            CarritoVacio(
+                onVerProductos = onVolver,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(carrito, key = { it.producto.id }) { item ->
+                    FilaCarrito(
+                        item = item,
+                        onIncrementar = { onIncrementar(item.producto) },
+                        onDecrementar = { onDecrementar(item.producto) },
+                        onEliminar = { onEliminar(item.producto) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
             }
-        }
 
-        ResumenYBoton(
-            subtotal = subtotal,
-            delivery = COSTO_DELIVERY,
-            total = total,
-            onContinuarPedido = onContinuarPedido
-        )
+            ResumenYBoton(
+                subtotal = subtotal,
+                delivery = COSTO_DELIVERY,
+                total = total,
+                onContinuarPedido = onContinuarPedido
+            )
+        }
     }
 }
 
@@ -114,6 +127,58 @@ private fun EncabezadoCarrito(onVolver: () -> Unit) {
             text = "Mi carrito",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
+ * Mensaje de "carrito vacío" con un botón para volver a elegir productos.
+ * "Ver productos" usa el mismo onVolver de la flecha: regresa a la pantalla
+ * desde donde se abrió el carrito (Inicio o Categorías).
+ */
+@Composable
+private fun CarritoVacio(
+    onVerProductos: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.ShoppingCart,
+            contentDescription = null, // decorativo: el texto de abajo ya lo dice
+            tint = VerdeBodega,
+            modifier = Modifier
+                .size(96.dp)
+                .background(GrisClaro, CircleShape)
+                .padding(24.dp)
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = "Tu carrito está vacío",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = "Agrega productos desde Inicio o Categorías para hacer tu pedido.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        BotonPrimario(
+            texto = "Ver productos",
+            onClick = onVerProductos
         )
     }
 }
@@ -241,3 +306,17 @@ private fun CarritoPreview() {
     }
 }
 
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun CarritoVacioPreview() {
+    BodegaTheme {
+        CarritoScreen(
+            carrito = emptyList(),
+            onVolver = {},
+            onIncrementar = {},
+            onDecrementar = {},
+            onEliminar = {},
+            onContinuarPedido = {}
+        )
+    }
+}
