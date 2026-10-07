@@ -52,6 +52,7 @@ import com.tecsup.mibodega.ui.componentes.ProductoCard
 import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
+import java.text.Normalizer
 
 /**
  * Pantalla 3: Inicio / Productos (mockup "Cliente").
@@ -73,9 +74,17 @@ fun InicioScreen(
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
     var textoBusqueda by remember { mutableStateOf("") }
 
+    // Se normaliza UNA sola vez lo que escribió el usuario (sin tildes, en
+    // minúsculas y sin espacios a los costados) para no repetirlo por cada producto
+    val busquedaNormalizada = normalizarTexto(textoBusqueda)
+
+    // Los dos filtros se combinan con "&&": un producto se muestra solo si
+    // pasa el filtro de categoría Y también el de búsqueda
     val productosFiltrados = productos.filter { producto ->
         val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
-        val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
+        // El nombre también se normaliza: así "cafe" encuentra "Café" y "COSTENO" encuentra "Costeño".
+        // Si la búsqueda está vacía, contains("") es true y no se filtra nada.
+        val coincideBusqueda = normalizarTexto(producto.nombre).contains(busquedaNormalizada)
         coincideCategoria && coincideBusqueda
     }
 
@@ -161,6 +170,27 @@ fun InicioScreen(
         }
     }
 }
+
+// Funciones de apoyo para el buscador.
+
+// Expresión regular para las "marcas" que acompañan a una letra (tilde, diéresis,
+// virgulilla de la ñ...). \p{Mn} = "Mark, nonspacing" en Unicode.
+// Se crea una sola vez porque compilar un Regex en cada búsqueda es costoso.
+private val MARCAS_DE_ACENTO = Regex("\\p{Mn}+")
+
+/**
+ * Deja un texto listo para comparar en el buscador:
+ * 1. Normalizer NFD separa cada letra de su tilde: "é" pasa a ser "e" + "´".
+ * 2. Se borran esas tildes sueltas con MARCAS_DE_ACENTO: "Café" → "Cafe".
+ * 3. lowercase() pasa todo a minúsculas: "Cafe" → "cafe".
+ * 4. trim() quita los espacios del inicio y del final.
+ * Ejemplo: normalizarTexto("  Arroz COSTEÑO ") devuelve "arroz costeno".
+ */
+private fun normalizarTexto(texto: String): String =
+    Normalizer.normalize(texto, Normalizer.Form.NFD)
+        .replace(MARCAS_DE_ACENTO, "")
+        .lowercase()
+        .trim()
 
 // Sub-composables PRIVADOS: solo los usa esta pantalla.
 
